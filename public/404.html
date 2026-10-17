@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 — Piece Not Found | BASMA | بصمة (@basma.llb)</title>
+  <meta name="robots" content="noindex, follow" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/basma-logo.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-espresso: #14110E;
+      --accent-walnut: #6E4726;
+      --accent-gold: #C59B27;
+      --accent-gold-light: #E5C158;
+      --text-sand: #F5F2EB;
+      --text-muted: #B8AFA3;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background:
+        radial-gradient(circle at 50% 25%, rgba(197, 155, 39, 0.14) 0%, transparent 60%),
+        repeating-linear-gradient(4deg, #1B1612 0px, #211B16 14px, #16120F 28px);
+      color: var(--text-sand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .notfound-card {
+      max-width: 560px;
+      width: 100%;
+      background: rgba(26, 22, 18, 0.88);
+      backdrop-filter: blur(14px);
+      border: 1.5px solid rgba(197, 155, 39, 0.42);
+      border-radius: 24px;
+      padding: 2.75rem 2rem;
+      text-align: center;
+      box-shadow: 0 28px 65px rgba(0, 0, 0, 0.75);
+    }
+    .brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.4rem 1rem;
+      border-radius: 99px;
+      background: rgba(197, 155, 39, 0.12);
+      border: 1px solid rgba(197, 155, 39, 0.35);
+      color: var(--accent-gold-light);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+    .code-404 {
+      font-family: 'Cinzel', 'Playfair Display', serif;
+      font-size: clamp(3.8rem, 12vw, 5.5rem);
+      font-weight: 700;
+      line-height: 1;
+      background: linear-gradient(135deg, #F5E1A4 0%, #C59B27 55%, #8C5D34 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.65rem;
+      margin-bottom: 0.75rem;
+      color: #FFF;
+    }
+    p {
+      font-size: 0.94rem;
+      line-height: 1.65;
+      color: var(--text-muted);
+      margin-bottom: 1.85rem;
+    }
+    .actions {
+      display: flex;
+      gap: 0.85rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.85rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary {
+      background: linear-gradient(135deg, #E5C158 0%, #C59B27 100%);
+      color: #141414;
+      box-shadow: 0 10px 25px rgba(197, 155, 39, 0.35);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-sand);
+      border: 1px solid rgba(197, 155, 39, 0.35);
+    }
+  </style>
+</head>
+<body>
+  <main class="notfound-card">
+    <div class="brand-pill">✦ BASMA | بَصْمَة • @basma.llb</div>
+    <div class="code-404">404</div>
+    <h1>This Coordinate Isn’t on Our CNC Bed</h1>
+    <p>
+      The page or artwork link you are looking for may have been moved or custom-commissioned. Return to the Basma Studio showroom to explore our 3D solid walnut reliefs and matte-black automotive silhouettes.
+    </p>
+    <div class="actions">
+      <a href="/" class="btn btn-primary">
+        <span>← Return to Basma Showroom</span>
+      </a>
+      <a href="https://wa.me/96170360671" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+        <span>WhatsApp Studio Concierge</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# ============================================================================
+# BASMA (بصمة | @basma.llb) — Robots & AI Crawler Directives
+# Precision 3D CNC Wood Carvings & Matte-Black Automotive Wall Silhouettes
+# ============================================================================
+
+User-agent: *
+Allow: /
+Disallow: /api/admin-auth
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://basma-studio.vercel.app/sitemap.xml

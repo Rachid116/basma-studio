@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5C158" />
+      <stop offset="50%" stop-color="#C59B27" />
+      <stop offset="100%" stop-color="#8C5D34" />
+    </linearGradient>
+    <radialGradient id="carbonBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#24201C" />
+      <stop offset="100%" stop-color="#12100E" />
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" rx="28" fill="url(#carbonBg)" />
+  <circle cx="60" cy="60" r="50" fill="none" stroke="url(#goldGrad)" stroke-width="3.5" />
+  <circle cx="60" cy="60" r="43" fill="none" stroke="rgba(197,155,39,0.32)" stroke-width="1.2" stroke-dasharray="4 3" />
+  <!-- Stylized Arabic 'ب' (Basma) & Precision CNC Crest -->
+  <path d="M32 62 C32 76, 46 82, 60 82 C74 82, 88 76, 88 62 L88 50 L80 50 L80 61 C80 70, 71 74, 60 74 C49 74, 40 70, 40 61 L40 50 L32 50 Z" fill="url(#goldGrad)" />
+  <circle cx="60" cy="91" r="4.5" fill="#E5C158" />
+  <text x="60" y="45" text-anchor="middle" fill="url(#goldGrad)" font-family="Georgia, serif" font-weight="bold" font-size="16" letter-spacing="2">BASMA</text>
+</svg>

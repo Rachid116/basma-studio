@@ -1,0 +1,39 @@
+# BASMA | بصمة (@basma.llb) — 3D CNC Wood Carving & Automotive Wall Art Studio
+
+> Basma (بصمة | @basma.llb) is a specialized Lebanese artisan & precision CNC woodworking studio crafting deep 3D solid hardwood relief carvings and sleek matte-black layered automotive & gaming wall silhouettes.
+
+## Studio Overview
+- **Brand Name:** BASMA | بصمة
+- **Instagram Handle:** [@basma.llb](https://www.instagram.com/basma.llb)
+- **Direct WhatsApp Concierge:** https://wa.me/96170360671 (+961 70 360 671)
+- **Email:** mailto:concierge@basma-studio.com
+- **Origin:** Beirut, Lebanon (Worldwide Express Shipping & Local Cash on Delivery)
+- **Core Craftsmanship:**
+  1. **Drive The Vibe (Matte-Black Layered Wood Silhouettes):** Precision CNC/laser-routed 15mm–18mm high-density wood wall cutouts finished in 0%-glare architectural matte carbon black with floating wall standoffs.
+  2. **3D Wood Design (Deep CNC Relief Carvings):** Multi-axis 0.1mm tolerance Z-depth relief sculptures carved into kiln-dried solid walnut, natural oak, and aged Lebanese cedar, hand-sanded to 400-grit and sealed with organic beeswax-linseed oil.
+
+## Product Collections & Pricing (USD)
+1. **The Garage (Automotive Silhouettes & Circuits):**
+   - *Aero GT Hypercar Wall Silhouette*: Small 50×28cm ($58), Medium 80×45cm ($94), Large 115×64cm ($138)
+   - *911 GT3 RS Aero Profile Cutout*: Small 45×22cm ($54), Medium 75×36cm ($89), Large 110×52cm ($129)
+   - *Alpine 4×4 Off-Road & Peak Silhouette*: Small 45×32cm ($59), Medium 75×52cm ($95), Large 105×72cm ($139)
+   - *Grand Prix Circuit Elevation Track Art*: Small 45×35cm ($55), Medium 75×58cm ($88), Large 105×80cm ($132)
+2. **3D Relief & Heritage:**
+   - *Sacred Medallion 3D CNC Wood Relief*: Small 30×30cm ($75), Medium 45×45cm ($118), Large 65×65cm ($175)
+   - *Immortal Cedar of Lebanon 3D Relief Plaque*: Small 35×35cm ($72), Medium 55×55cm ($115), Large 80×80cm ($168)
+   - *“Basma | بصمة” Gold-Fluted Arabic Calligraphy*: Small 40cm ($68), Medium 65cm ($108), Large 95cm ($158)
+3. **Anime & Gaming Lounge:**
+   - *Ronin Wolf & Crossed Katana Crest*: Small 40×40cm ($56), Medium 70×70cm ($92), Large 100×100cm ($135)
+   - *Pro Lounge Hex-Shield Controller Emblem*: Small 40×46cm ($52), Medium 65×75cm ($86), Large 95×108cm ($128)
+
+## Interactive Studio Configurators
+- **Wall Vibe & Lighting Simulator (`/#wall-vibe-studio`):** Preview pieces on Warm Sunlit Plaster, Matte Charcoal Slate, Natural Wood Slats, or Industrial Loft Brick under Natural Daylight or Warm Night Spotlight, with click-and-drag wall placement.
+- **Live Size & Price Calculator (`/#size-price-guide`):** Real-time 30cm–120cm scale visualizer above a reference 210cm sofa.
+  - Matte Cutout Formula: `Base $28 + ($0.95 × Width_cm)`
+  - 3D CNC Relief Formula: `Base $45 + ($1.45 × Width_cm)`
+- **“Carve Your Own” Custom Order Studio (`/#custom-configurator`):** Upload any car, portrait, or emblem photo for real-time HTML5 Canvas 3D wood relief or matte-black stencil simulation, custom wood species selection (Oak, Walnut, Cedar, Carbon Black), custom dimensions, and draggable laser-engraved dedication text.
+
+## Ordering & Fulfillment Workflow
+- Customers can add catalog or bespoke items to the slide-over order bag or send a structured custom specification sheet directly via WhatsApp (`https://wa.me/96170360671`).
+- Every custom commission includes a 3D digital proof for approval prior to CNC routing.
+- Payment via Cash on Delivery (COD) in Lebanon and express courier delivery internationally.
