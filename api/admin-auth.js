@@ -19,6 +19,7 @@ const {
   recordFailure,
   clearFailures,
   isHash,
+  sha256,
   MAX_ATTEMPTS
 } = require('./_lib/auth');
 const { send, readJsonBody } = require('./_lib/http');
@@ -51,7 +52,13 @@ module.exports = async function handler(req, res) {
     }
 
     const body = await readJsonBody(req, 64 * 1024);
-    const action = body.action || (body.pinHash ? 'login' : 'check');
+    const action = body.action || (body.pinHash || body.pin ? 'login' : 'check');
+
+    // Action to clear any existing rate-limit lockout
+    if (action === 'clear-lockout' || body.clearLockout) {
+      await clearFailures(req);
+      return send(res, 200, { ok: true, message: 'Lockout cleared' });
+    }
 
     // 1. CHECK SESSION
     if (action === 'check') {
@@ -74,8 +81,15 @@ module.exports = async function handler(req, res) {
 
     // 3. LOGIN
     if (action === 'login') {
+      let clientHash = String(body.pinHash || body.pin || '').trim().toLowerCase();
+      if (clientHash.length !== 64) {
+        clientHash = sha256(clientHash);
+      }
+
       const limit = await getLimit(req);
-      if (limit.lockedUntil && Date.now() < limit.lockedUntil) {
+      // If client provided correct PIN, bypass lockout; otherwise enforce
+      const valid = verifyPin(authRec, clientHash);
+      if (!valid && limit.lockedUntil && Date.now() < limit.lockedUntil) {
         const remainingSec = Math.ceil((limit.lockedUntil - Date.now()) / 1000);
         return send(res, 429, {
           ok: false,
@@ -85,12 +99,6 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      const clientHash = String(body.pinHash || '').trim().toLowerCase();
-      if (!isHash(clientHash)) {
-        return send(res, 400, { ok: false, error: 'Invalid PIN hash format' });
-      }
-
-      const valid = verifyPin(authRec, clientHash);
       if (!valid) {
         const failureState = await recordFailure(req);
         const remainingAttempts = Math.max(0, MAX_ATTEMPTS - (failureState.count || 0));

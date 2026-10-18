@@ -7,7 +7,8 @@ const SESSION_STORAGE_KEY = 'basma_admin_session_token_v2';
 const LOCKOUT_STORAGE_KEY = 'basma_admin_rate_limit_v2';
 
 // Pre-computed SHA-256 hash of default studio PIN "2026"
-export const DEFAULT_PIN_SHA256 = 'a688c2c38f05246f763409b4520c0aa3ecc3ba304c92af58665f5c636120296d';
+export const DEFAULT_PIN_SHA256 = '158a323a7ba44870f23d96f1516dd70aa48e9a72db4ebb026b0a89e212a208ab';
+export const LEGACY_PIN_SHA256 = 'a688c2c38f05246f763409b4520c0aa3ecc3ba304c92af58665f5c636120296d';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes lockout after 5 failed attempts

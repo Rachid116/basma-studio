@@ -10,7 +10,8 @@ const crypto = require('crypto');
 const storage = require('./storage');
 const { parseCookies, clientIp, isHttps } = require('./http');
 
-const DEFAULT_PIN_SHA256 = 'a688c2c38f05246f763409b4520c0aa3ecc3ba304c92af58665f5c636120296d'; // "2026"
+const DEFAULT_PIN_SHA256 = '158a323a7ba44870f23d96f1516dd70aa48e9a72db4ebb026b0a89e212a208ab'; // sha256("2026")
+const LEGACY_PIN_SHA256 = 'a688c2c38f05246f763409b4520c0aa3ecc3ba304c92af58665f5c636120296d';
 const AUTH_KEY = 'basma:auth';
 const SESSION_COOKIE = 'basma_admin';
 const HINT_COOKIE = 'basma_admin_hint';
@@ -47,17 +48,31 @@ async function getAuthRecord() {
 
 function expectedHash(rec) {
   if (rec.hash) return rec.hash;
-  const envHash = String(process.env.ADMIN_PIN_HASH || '').toLowerCase();
+  const envHash = String(process.env.ADMIN_PIN_HASH || process.env.ADMIN_SECRET_HASH || '').toLowerCase();
   return sha256(`${rec.salt}:${isHash(envHash) ? envHash : DEFAULT_PIN_SHA256}`);
 }
 
 function usingDefaultPin(rec) {
-  return !rec.hash && !isHash(String(process.env.ADMIN_PIN_HASH || '').toLowerCase());
+  return !rec.hash && !isHash(String(process.env.ADMIN_PIN_HASH || process.env.ADMIN_SECRET_HASH || '').toLowerCase());
 }
 
 function verifyPin(rec, clientHash) {
+  if (!clientHash) return false;
+  // If client passed raw '2026'
+  if (clientHash === '2026') {
+    clientHash = DEFAULT_PIN_SHA256;
+  }
   if (!isHash(clientHash)) return false;
-  return safeEqual(sha256(`${rec.salt}:${clientHash}`), expectedHash(rec));
+
+  const candidate = sha256(`${rec.salt}:${clientHash}`);
+  if (safeEqual(candidate, expectedHash(rec))) return true;
+
+  if (usingDefaultPin(rec)) {
+    const trueDef = sha256(`${rec.salt}:${DEFAULT_PIN_SHA256}`);
+    const legDef = sha256(`${rec.salt}:${LEGACY_PIN_SHA256}`);
+    if (safeEqual(candidate, trueDef) || safeEqual(candidate, legDef)) return true;
+  }
+  return false;
 }
 
 async function setPin(rec, newClientHash) {
@@ -170,5 +185,6 @@ module.exports = {
   getLimit,
   recordFailure,
   clearFailures,
-  randomHex
+  randomHex,
+  sha256
 };

@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 8080;
 const ROOT_DIR = __dirname;
 const DIST_DIR = path.join(ROOT_DIR, 'dist');
 const STATE_FILE = path.join(ROOT_DIR, 'store-state.json');
-const DEFAULT_PIN_HASH = 'a688c2c38f05246f763409b4520c0aa3ecc3ba304c92af58665f5c636120296d';
+const DEFAULT_PIN_HASH = '158a323a7ba44870f23d96f1516dd70aa48e9a72db4ebb026b0a89e212a208ab';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
