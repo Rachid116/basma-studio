@@ -170,6 +170,28 @@ export function initAdminModal() {
   }
 
   if (submitPinBtn) submitPinBtn.addEventListener('click', attemptPinUnlock);
+
+  const resetPinModalBtn = document.getElementById('resetAdminPinModalBtn');
+  if (resetPinModalBtn) {
+    resetPinModalBtn.addEventListener('click', async () => {
+      if (!confirm('Reset Admin PIN back to default "2026"?')) return;
+      saveAdminPinHash(DEFAULT_PIN_SHA256);
+      clearFailedPinAttempts();
+      clearAdminSession();
+      try {
+        await fetch('/api/admin-auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reset-pin' })
+        });
+      } catch (_) {}
+      pinInput.value = '2026';
+      pinError.style.color = '#4ade80';
+      pinError.textContent = '✓ Admin PIN reset to default: 2026. Click Unlock to continue.';
+      pinError.style.display = 'block';
+    });
+  }
+
   if (pinInput) {
     pinInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {

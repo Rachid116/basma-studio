@@ -162,6 +162,41 @@ async function logoutAdmin() {
   showToast('Logged out of Admin CMS.');
 }
 
+async function resetAdminPinToDefault(interactive = true) {
+  if (interactive && !confirm('Reset Admin PIN back to factory default "2026"?')) {
+    return;
+  }
+  try {
+    saveAdminPinHash(DEFAULT_PIN_SHA256);
+    clearAdminSession();
+    state.settings.adminPinHash = DEFAULT_PIN_SHA256;
+
+    // Reset on serverless endpoint
+    try {
+      await fetch('/api/admin-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset-pin' })
+      });
+    } catch (_) {}
+
+    // Reset in Supabase / persistent cloud database
+    try {
+      await upsertStoreToSupabase(state);
+    } catch (_) {}
+
+    isLocked = false;
+    if (lockTimer) clearInterval(lockTimer);
+    enteredPin = '';
+    updatePinDots();
+
+    showAuthStatus('✓ Admin PIN reset to default 2026! Enter 2026 below to log in.', 'success');
+    showToast('PIN reset to default: 2026. Enter 2026 to log in.', 4500);
+  } catch (err) {
+    showAuthStatus('Failed to reset PIN: ' + err.message, 'error');
+  }
+}
+
 function unlockDashboard() {
   document.getElementById('adminAuthScreen').style.display = 'none';
   const dashboard = document.getElementById('adminDashboard');
@@ -1238,8 +1273,17 @@ function initAdminApp() {
   });
 
   document.getElementById('btnSubmitPin')?.addEventListener('click', submitPin);
+  document.getElementById('btnForgotResetPin')?.addEventListener('click', () => resetAdminPinToDefault(true));
   document.getElementById('btnLogoutAdmin')?.addEventListener('click', logoutAdmin);
   document.getElementById('btnSaveLiveSync')?.addEventListener('click', saveLiveStoreState);
+
+  // Check if opened with ?reset=true or ?reset=2026
+  if (typeof window !== 'undefined' && window.location.search) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('reset')) {
+      resetAdminPinToDefault(false);
+    }
+  }
 
   // 3. Tab switching
   document.querySelectorAll('.admin-tab-btn').forEach(btn => {

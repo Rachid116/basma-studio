@@ -60,6 +60,34 @@ module.exports = async function handler(req, res) {
       return send(res, 200, { ok: true, message: 'Lockout cleared' });
     }
 
+    // Action to reset Admin PIN to factory default (2026)
+    if (action === 'reset-pin') {
+      await clearFailures(req);
+      const storage = require('./_lib/storage');
+      authRec.hash = null;
+      authRec.sessionVersion = (authRec.sessionVersion || 1) + 1;
+      authRec.updatedAt = new Date().toISOString();
+      await storage.setJSON('basma:auth', authRec);
+
+      // Also reset in main_store
+      try {
+        const mainStore = await storage.getJSON('main_store');
+        if (mainStore && mainStore.settings) {
+          mainStore.settings.adminPinHash = '158a323a7ba44870f23d96f1516dd70aa48e9a72db4ebb026b0a89e212a208ab';
+          await storage.setJSON('main_store', mainStore);
+        }
+      } catch (_) {}
+
+      const clearHeaders = clearSessionCookies(req);
+      return send(res, 200, {
+        ok: true,
+        usingDefaultPin: true,
+        message: 'Admin PIN successfully reset to factory default (2026)'
+      }, {
+        'Set-Cookie': clearHeaders
+      });
+    }
+
     // 1. CHECK SESSION
     if (action === 'check') {
       const session = await readSession(req);
