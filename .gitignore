@@ -1,14 +1,17 @@
 # Environment & Secrets Exclusion
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+!.env.example
 
 # Dependencies & Build Output
 node_modules/
 dist/
 .vercel/
+data/
 
 # OS & Editor Files
 .DS_Store

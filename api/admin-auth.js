@@ -1,41 +1,159 @@
 /**
- * Vercel Serverless Function: /api/admin-auth
- * Verifies SHA-256 hashed Admin PIN against environment or stored hash without exposing plaintext PINs.
+ * BASMA (@basma.llb) — /api/admin-auth
+ * Actions:
+ *   - POST { action: 'login', pinHash, hours }: Verifies SHA-256 PIN hash, enforces 5-attempt rate limit, sets HttpOnly cookie.
+ *   - GET / POST { action: 'check' }: Verifies session cookie or token, returns { authenticated: boolean, usingDefaultPin, expiresAt }.
+ *   - POST { action: 'logout' }: Clears session cookies.
+ *   - POST { action: 'change-pin', currentPinHash, newPinHash }: Re-verifies current PIN, updates to new PIN hash, revokes other sessions.
  */
 
-const crypto = require('crypto');
-
-const DEFAULT_PIN_HASH = 'a688c2c38f05246f763409b4520c0aa3ecc3ba304c92af58665f5c636120296d';
+const {
+  getAuthRecord,
+  verifyPin,
+  usingDefaultPin,
+  setPin,
+  buildSessionCookies,
+  clearSessionCookies,
+  readSession,
+  getLimit,
+  recordFailure,
+  clearFailures,
+  isHash,
+  MAX_ATTEMPTS
+} = require('./_lib/auth');
+const { send, readJsonBody } = require('./_lib/http');
 
 module.exports = async function handler(req, res) {
+  // CORS & Security headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Basma-Admin');
   res.setHeader('X-Content-Type-Options', 'nosniff');
 
   if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+    res.statusCode = 204;
+    return res.end();
   }
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
-    const candidateHash = String(body.pinHash || '').trim().toLowerCase();
-    const expectedHash = String(process.env.VITE_ADMIN_PIN_HASH || DEFAULT_PIN_HASH).trim().toLowerCase();
+    const authRec = await getAuthRecord();
 
-    if (!candidateHash || candidateHash.length !== 64) {
-      return res.status(400).json({ ok: false, error: 'Invalid hash format' });
+    // GET request = session check
+    if (req.method === 'GET') {
+      const session = await readSession(req);
+      const isAuth = !!session;
+      return send(res, 200, {
+        ok: true,
+        authenticated: isAuth,
+        usingDefaultPin: usingDefaultPin(authRec),
+        expiresAt: session ? session.exp : null
+      });
     }
 
-    const a = Buffer.from(candidateHash, 'utf8');
-    const b = Buffer.from(expectedHash, 'utf8');
-    const match = a.length === b.length && crypto.timingSafeEqual(a, b);
+    const body = await readJsonBody(req, 64 * 1024);
+    const action = body.action || (body.pinHash ? 'login' : 'check');
 
-    return res.status(200).json({ ok: match });
-  } catch (_) {
-    return res.status(400).json({ ok: false, error: 'Bad request' });
+    // 1. CHECK SESSION
+    if (action === 'check') {
+      const session = await readSession(req);
+      return send(res, 200, {
+        ok: true,
+        authenticated: !!session,
+        usingDefaultPin: usingDefaultPin(authRec),
+        expiresAt: session ? session.exp : null
+      });
+    }
+
+    // 2. LOGOUT
+    if (action === 'logout') {
+      const clearHeaders = clearSessionCookies(req);
+      return send(res, 200, { ok: true, message: 'Logged out successfully' }, {
+        'Set-Cookie': clearHeaders
+      });
+    }
+
+    // 3. LOGIN
+    if (action === 'login') {
+      const limit = await getLimit(req);
+      if (limit.lockedUntil && Date.now() < limit.lockedUntil) {
+        const remainingSec = Math.ceil((limit.lockedUntil - Date.now()) / 1000);
+        return send(res, 429, {
+          ok: false,
+          error: `Too many failed attempts. Security lockout active for ${remainingSec} seconds.`,
+          locked: true,
+          remainingSeconds: remainingSec
+        });
+      }
+
+      const clientHash = String(body.pinHash || '').trim().toLowerCase();
+      if (!isHash(clientHash)) {
+        return send(res, 400, { ok: false, error: 'Invalid PIN hash format' });
+      }
+
+      const valid = verifyPin(authRec, clientHash);
+      if (!valid) {
+        const failureState = await recordFailure(req);
+        const remainingAttempts = Math.max(0, MAX_ATTEMPTS - (failureState.count || 0));
+        return send(res, 401, {
+          ok: false,
+          error: remainingAttempts === 0
+            ? 'Account temporarily locked due to 5 consecutive failed attempts. Try again in 15 minutes.'
+            : `Invalid Studio PIN. ${remainingAttempts} attempts remaining.`,
+          remainingAttempts,
+          locked: remainingAttempts === 0
+        });
+      }
+
+      // Success: clear rate limits
+      await clearFailures(req);
+      const hours = body.hours || 2;
+      const { cookies, expiresAt } = buildSessionCookies(req, authRec, hours);
+
+      return send(res, 200, {
+        ok: true,
+        authenticated: true,
+        usingDefaultPin: usingDefaultPin(authRec),
+        expiresAt,
+        message: 'Admin access authorized'
+      }, {
+        'Set-Cookie': cookies
+      });
+    }
+
+    // 4. CHANGE PIN
+    if (action === 'change-pin') {
+      const session = await readSession(req);
+      if (!session) {
+        return send(res, 401, { ok: false, error: 'Unauthorized. Please log in first.' });
+      }
+
+      const currentHash = String(body.currentPinHash || '').trim().toLowerCase();
+      const newHash = String(body.newPinHash || '').trim().toLowerCase();
+
+      if (!isHash(currentHash) || !isHash(newHash)) {
+        return send(res, 400, { ok: false, error: 'Invalid PIN format' });
+      }
+
+      const isCurrentValid = verifyPin(authRec, currentHash);
+      if (!isCurrentValid) {
+        return send(res, 403, { ok: false, error: 'Current PIN verification failed' });
+      }
+
+      const updatedRec = await setPin(authRec, newHash);
+      const { cookies, expiresAt } = buildSessionCookies(req, updatedRec, 8);
+
+      return send(res, 200, {
+        ok: true,
+        usingDefaultPin: false,
+        expiresAt,
+        message: 'Studio PIN successfully updated across all devices'
+      }, {
+        'Set-Cookie': cookies
+      });
+    }
+
+    return send(res, 400, { ok: false, error: 'Unknown action' });
+  } catch (err) {
+    return send(res, 500, { ok: false, error: err.message || 'Internal server error' });
   }
 };

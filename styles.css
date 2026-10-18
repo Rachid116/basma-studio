@@ -2889,4 +2889,60 @@ body[dir="rtl"] .mobile-nav-drawer.open {
   }
 }
 
+/* Site-Wide Dynamic Promo & Announcement Top Bar */
+.site-announcement-bar {
+  background: linear-gradient(90deg, #181512 0%, #2b1f14 50%, #181512 100%);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.35);
+  color: #f7f4ed;
+  padding: 0.55rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  z-index: 1050;
+  transition: all 0.3s ease;
+}
+
+.site-announcement-bar .announcement-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.site-announcement-bar .announcement-badge {
+  background: linear-gradient(135deg, #d4af37 0%, #aa8010 100%);
+  color: #0d0d0f;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.35);
+}
+
+.site-announcement-bar .announcement-text {
+  color: #f0e6d2;
+}
+
+.site-announcement-bar .announcement-link {
+  color: #d4af37;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease;
+}
+
+.site-announcement-bar .announcement-link:hover {
+  color: #f5e4a8;
+}
+
+
 

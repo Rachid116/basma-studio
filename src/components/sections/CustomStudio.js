@@ -423,6 +423,31 @@ export function initCustomStudio() {
       updateCustomConfiguratorEstimate();
       const formattedPrice = formatPrice(customState.estimatedUSD, storeState.currentCurrencyIndex);
       const message = buildCustomSpecSheetMessage(customState, formattedPrice);
+
+      // Automatically capture custom quote inquiry in Leads (Admin Tab 5)
+      try {
+        fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerName: 'Custom Quote Visitor',
+            phone: '',
+            notes: `Wood: ${customState.woodLabel}, Engraving: "${customState.engraving || 'None'}"`,
+            type: 'Custom Commission Quote',
+            items: [{
+              title: `Custom ${customState.carveStyle === 'relief' ? '3D CNC Relief' : 'Silhouette'} (${customState.fileName})`,
+              style: customState.carveStyle,
+              size: `${customState.widthCm} × ${customState.heightCm} cm`,
+              finish: customState.woodLabel,
+              priceUSD: customState.estimatedUSD,
+              qty: 1
+            }],
+            totalUSD: customState.estimatedUSD,
+            formattedPrice
+          })
+        }).catch(() => {});
+      } catch (_) {}
+
       const waUrl = buildWhatsAppUrl(storeState.settings.whatsappNumber, message);
       window.open(waUrl, '_blank', 'noopener,noreferrer');
     });

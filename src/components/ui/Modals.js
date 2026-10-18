@@ -249,6 +249,31 @@ export function initModalsAndCart() {
         totalUSD
       });
 
+      // Automatically capture order inquiry in Leads & WhatsApp Order Log (Admin Tab 5)
+      try {
+        fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerName: nameVal,
+            phone: phoneVal,
+            address: addressVal,
+            notes: notesInput?.value || '',
+            type: 'Catalog Order',
+            items: storeState.cart.map(item => ({
+              title: item.title,
+              style: item.style,
+              size: item.sizeLabel,
+              finish: item.finish,
+              priceUSD: item.priceUSD,
+              qty: item.qty
+            })),
+            totalUSD,
+            formattedPrice: formatPrice(totalUSD, storeState.currentCurrencyIndex)
+          })
+        }).catch(() => {});
+      } catch (_) {}
+
       const waUrl = buildWhatsAppUrl(storeState.settings.whatsappNumber, ticket);
       window.open(waUrl, '_blank', 'noopener,noreferrer');
     });

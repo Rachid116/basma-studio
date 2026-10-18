@@ -1,97 +1,118 @@
 /**
- * Vercel Serverless Function: /api/store-state
- * Reads and persists the Basma store state across `/tmp/store-state.json`,
- * root `store-state.json`, or optional Cloud KV / REST webhook.
+ * BASMA (@basma.llb) — /api/store-state
+ * Persists and returns the entire store state (products, pricing, CMS text, customizer options, store settings).
+ * Integrates with storage adapter: Vercel KV (cloud persistent), local disk, or fallback.
  */
 
 const fs = require('fs');
 const path = require('path');
+const storage = require('./_lib/storage');
+const { send, readJsonBody } = require('./_lib/http');
 
-const TMP_STATE_FILE = path.join('/tmp', 'basma-store-state.json');
+const STATE_STORAGE_KEY = 'basma:store_state';
 const ROOT_STATE_FILE = path.join(process.cwd(), 'store-state.json');
 const PUBLIC_STATE_FILE = path.join(process.cwd(), 'public', 'store-state.json');
+const INITIAL_DATA_FILE = path.join(process.cwd(), 'src', 'data', 'initialStoreData.json');
 
-function readCurrentState() {
+async function loadBaselineState() {
+  // 1. Try storage adapter (KV or persistent disk)
   try {
-    if (fs.existsSync(TMP_STATE_FILE)) {
-      return fs.readFileSync(TMP_STATE_FILE, 'utf8');
+    const fromStorage = await storage.getJSON(STATE_STORAGE_KEY);
+    if (fromStorage && typeof fromStorage === 'object' && Array.isArray(fromStorage.products)) {
+      return fromStorage;
     }
-  } catch (_) {
-    // Fallback to repository state file
-  }
+  } catch (_) {}
+
+  // 2. Try root store-state.json file
   try {
     if (fs.existsSync(ROOT_STATE_FILE)) {
-      return fs.readFileSync(ROOT_STATE_FILE, 'utf8');
+      return JSON.parse(fs.readFileSync(ROOT_STATE_FILE, 'utf8'));
     }
-  } catch (_) {
-    // Fallback to public state file
-  }
+  } catch (_) {}
+
+  // 3. Try public/store-state.json
   try {
     if (fs.existsSync(PUBLIC_STATE_FILE)) {
-      return fs.readFileSync(PUBLIC_STATE_FILE, 'utf8');
+      return JSON.parse(fs.readFileSync(PUBLIC_STATE_FILE, 'utf8'));
     }
-  } catch (_) {
-    // Return null if none exist
-  }
+  } catch (_) {}
+
+  // 4. Try src/data/initialStoreData.json zero-failure fallback
+  try {
+    if (fs.existsSync(INITIAL_DATA_FILE)) {
+      return JSON.parse(fs.readFileSync(INITIAL_DATA_FILE, 'utf8'));
+    }
+  } catch (_) {}
+
   return null;
 }
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Basma-Admin');
   res.setHeader('X-Content-Type-Options', 'nosniff');
 
   if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+    res.statusCode = 204;
+    return res.end();
   }
 
+  // GET: Return current live store state
   if (req.method === 'GET') {
-    const data = readCurrentState();
-    if (!data) {
-      return res.status(404).json({ ok: false, error: 'State file not found' });
+    const state = await loadBaselineState();
+    if (!state) {
+      return send(res, 404, { ok: false, error: 'Store state file not found' });
     }
-    res.setHeader('Cache-Control', 'no-store, max-age=0');
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    return res.status(200).send(data);
+    // Never leak plaintext admin PIN in public state
+    if (state.settings && state.settings.adminPin) {
+      delete state.settings.adminPin;
+    }
+    state.backend = storage.backend();
+    state.isPersistent = storage.isPersistent();
+    return send(res, 200, state);
   }
 
+  // POST: Save updated store state
   if (req.method === 'POST') {
     try {
-      const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      const payload = await readJsonBody(req, 15 * 1024 * 1024);
       if (!payload || typeof payload !== 'object' || !Array.isArray(payload.products)) {
-        return res.status(400).json({ ok: false, error: 'Invalid store state payload' });
+        return send(res, 400, { ok: false, error: 'Invalid store state payload: expected products array' });
       }
 
-      // Strip any accidental plaintext PIN before persisting
+      // Security sanitization: never store plaintext PIN in settings
       if (payload.settings && payload.settings.adminPin) {
         delete payload.settings.adminPin;
       }
 
-      const serialized = JSON.stringify(payload, null, 2);
+      payload.updatedAt = new Date().toISOString();
 
-      // Persist to /tmp for warm serverless instances
+      // Save to primary storage adapter (KV / disk)
       try {
-        fs.writeFileSync(TMP_STATE_FILE, serialized, 'utf8');
-      } catch (_) {
-        // Ignore read-only errors
-      }
+        await storage.setJSON(STATE_STORAGE_KEY, payload);
+      } catch (_) {}
 
-      // Persist to local disk when running in writable Node environment
+      // Also mirror to local filesystem if writable
+      const serialized = JSON.stringify(payload, null, 2);
       try {
         fs.writeFileSync(ROOT_STATE_FILE, serialized, 'utf8');
-      } catch (_) {
-        // Ignore on read-only serverless filesystem
-      }
+      } catch (_) {}
+      try {
+        fs.writeFileSync(PUBLIC_STATE_FILE, serialized, 'utf8');
+      } catch (_) {}
 
-      return res.status(200).json({
+      return send(res, 200, {
         ok: true,
-        syncedAt: new Date().toISOString()
+        backend: storage.backend(),
+        isPersistent: storage.isPersistent(),
+        syncedAt: payload.updatedAt,
+        message: 'Store state saved and synced live'
       });
     } catch (err) {
-      return res.status(400).json({ ok: false, error: 'Malformed JSON body' });
+      return send(res, 400, { ok: false, error: err.message || 'Malformed JSON payload' });
     }
   }
 
-  return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  return send(res, 405, { ok: false, error: 'Method not allowed' });
 };

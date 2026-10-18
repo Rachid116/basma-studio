@@ -4,14 +4,16 @@
  * static store-state.json fallback, and optional Cloud Webhook URLs.
  */
 
-import { DEFAULT_PRODUCTS, DEFAULT_SETTINGS } from '../data/products.js';
+import { DEFAULT_PRODUCTS, DEFAULT_SETTINGS, DEFAULT_CATEGORIES } from '../data/products.js';
 import { DEFAULT_PIN_SHA256, sha256Hex } from '../utils/security.js';
 import { CURRENCIES } from '../utils/priceFormatter.js';
+import { escapeHtml } from '../utils/sanitize.js';
 
 const STORAGE_KEY = 'basma_cms_unified_state_v3';
 
 export const storeState = {
   settings: { ...DEFAULT_SETTINGS },
+  categories: JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)),
   inlineEdits: {},
   products: JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)),
   currentCurrencyIndex: 0,
@@ -55,6 +57,7 @@ export function getStoreSnapshot() {
   return {
     version: '2026.3.0',
     updatedAt: new Date().toISOString(),
+    categories: storeState.categories,
     settings: safeSettings,
     inlineEdits: storeState.inlineEdits,
     products: storeState.products
@@ -72,6 +75,9 @@ export async function applyStoreSnapshot(snapshot) {
     delete merged.adminPin;
     storeState.settings = merged;
   }
+  if (Array.isArray(snapshot.categories) && snapshot.categories.length > 0) {
+    storeState.categories = snapshot.categories;
+  }
   if (snapshot.inlineEdits && typeof snapshot.inlineEdits === 'object') {
     storeState.inlineEdits = { ...snapshot.inlineEdits };
   }
@@ -82,16 +88,80 @@ export async function applyStoreSnapshot(snapshot) {
   CURRENCIES[0].symbol = storeState.settings.primaryCurrencySymbol || '$';
   CURRENCIES[0].label = storeState.settings.primaryCurrencyLabel || 'USD $';
 
-  // Update floating WhatsApp link & footer contact links
+  // 1. Dynamic WhatsApp, Phone, and Email links
   const cleanWa = (storeState.settings.whatsappNumber || '96170360671').replace(/[^0-9]/g, '');
   const floatWa = document.getElementById('floatingWhatsAppLink');
   if (floatWa) floatWa.href = `https://wa.me/${cleanWa}`;
-  document.querySelectorAll('[data-dynamic-wa]').forEach(el => {
+  document.querySelectorAll('[data-dynamic-wa], #footerWhatsAppLink').forEach(el => {
     el.href = `https://wa.me/${cleanWa}`;
   });
-  document.querySelectorAll('[data-dynamic-tel]').forEach(el => {
+  document.querySelectorAll('[data-dynamic-tel], #footerPhoneCallLink, #mobilePhoneLink').forEach(el => {
     el.href = `tel:+${cleanWa}`;
   });
+  if (storeState.settings.studioEmail) {
+    document.querySelectorAll('[data-dynamic-email], #footerEmailLink, #mobileEmailLink').forEach(el => {
+      el.href = `mailto:${storeState.settings.studioEmail}`;
+    });
+  }
+
+  // 2. Dynamic Promo / Discount Banner
+  const promo = storeState.settings.promoBanner;
+  let banner = document.getElementById('siteAnnouncementBar');
+  if (promo && promo.active && promo.text) {
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'siteAnnouncementBar';
+      banner.className = 'site-announcement-bar';
+      document.body.prepend(banner);
+    }
+    banner.style.display = 'flex';
+    banner.innerHTML = `
+      <div class="announcement-inner">
+        <span class="announcement-badge">${escapeHtml(promo.badge || 'PROMO')}</span>
+        <span class="announcement-text">${escapeHtml(promo.text)}</span>
+        ${promo.link ? `<a href="${escapeHtml(promo.link)}" class="announcement-link">Explore Now →</a>` : ''}
+      </div>
+    `;
+  } else if (banner) {
+    banner.style.display = 'none';
+  }
+
+  // 3. Dynamic CMS Homepage Copy
+  const cms = storeState.settings.cmsContent;
+  if (cms) {
+    if (cms.hero) {
+      const heroTitle = document.querySelector('.hero-title');
+      const heroSubtitle = document.querySelector('.hero-subtitle');
+      const heroBadge = document.querySelector('.hero-section .argon-badge span:last-child');
+      if (heroTitle && cms.hero.headline) heroTitle.innerHTML = cms.hero.headline;
+      if (heroSubtitle && cms.hero.subheadline) heroSubtitle.textContent = cms.hero.subheadline;
+      if (heroBadge && cms.hero.goldBadge) heroBadge.textContent = cms.hero.goldBadge;
+      if (cms.hero.image1) {
+        const slideImg1 = document.querySelector('#slideSilhouette img');
+        if (slideImg1) slideImg1.src = cms.hero.image1;
+      }
+      if (cms.hero.image2) {
+        const slideImg2 = document.querySelector('#slideRelief img');
+        if (slideImg2) slideImg2.src = cms.hero.image2;
+      }
+    }
+    if (Array.isArray(cms.craftSteps) && cms.craftSteps.length === 3) {
+      const craftCards = document.querySelectorAll('.craft-card');
+      cms.craftSteps.forEach((step, i) => {
+        if (craftCards[i]) {
+          const h3 = craftCards[i].querySelector('h3');
+          const p = craftCards[i].querySelector('p');
+          if (h3 && step.title) h3.innerHTML = step.title;
+          if (p && step.description) p.innerHTML = step.description;
+        }
+      });
+    }
+  }
+
+  // 4. Dynamic SEO Title & Meta
+  if (storeState.settings.seoMeta?.title && typeof document !== 'undefined') {
+    document.title = storeState.settings.seoMeta.title;
+  }
 
   notifyStoreListeners();
 }

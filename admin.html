@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>Basma Studio CMS — Store &amp; Content Management Dashboard</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/admin.css" />
+</head>
+<body>
+
+  <!-- ========================================================================
+       SCREEN 1: LUXURY DARK AUTH GATE (PIN ACCESS)
+       ======================================================================== -->
+  <main class="admin-auth-screen" id="adminAuthScreen">
+    <div class="admin-auth-card">
+      <img src="/assets/basma-logo.jpg" alt="Basma Emblem" class="admin-auth-emblem" />
+      <h1 class="admin-auth-title">BASMA | بَصْمَة</h1>
+      <p class="admin-auth-sub">Enter Studio Security PIN to Access Live CMS</p>
+
+      <div class="auth-status-msg" id="authStatusMsg" role="alert"></div>
+
+      <div class="pin-display" id="pinDisplay">
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+      </div>
+
+      <div class="pin-keypad">
+        <button type="button" class="keypad-btn" data-key="1">1</button>
+        <button type="button" class="keypad-btn" data-key="2">2</button>
+        <button type="button" class="keypad-btn" data-key="3">3</button>
+        <button type="button" class="keypad-btn" data-key="4">4</button>
+        <button type="button" class="keypad-btn" data-key="5">5</button>
+        <button type="button" class="keypad-btn" data-key="6">6</button>
+        <button type="button" class="keypad-btn" data-key="7">7</button>
+        <button type="button" class="keypad-btn" data-key="8">8</button>
+        <button type="button" class="keypad-btn" data-key="9">9</button>
+        <button type="button" class="keypad-btn action" data-key="clear">CLR</button>
+        <button type="button" class="keypad-btn" data-key="0">0</button>
+        <button type="button" class="keypad-btn action" data-key="back">⌫</button>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <button type="button" class="btn-admin btn-admin-primary" id="btnSubmitPin" style="width:100%; justify-content:center;">
+          Unlock Studio Dashboard
+        </button>
+      </div>
+
+      <a href="/" class="back-to-store-link">
+        ← Return to Public Website
+      </a>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       SCREEN 2: FULL 6-TAB DASHBOARD & VISUAL STORE MANAGER
+       ======================================================================== -->
+  <div class="admin-dashboard" id="adminDashboard">
+    <!-- Top Admin Bar -->
+    <header class="admin-topbar">
+      <div class="topbar-brand">
+        <img src="/assets/basma-logo.jpg" alt="Basma Emblem" />
+        <div>
+          <div class="topbar-brand-title">BASMA | بَصْمَة</div>
+          <div class="topbar-brand-badge">Live Studio CMS &amp; Manager</div>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <span class="admin-badge status-live" id="storageStatusBadge">
+          <span class="admin-badge-dot"></span>
+          <span id="storageBackendText">Vercel &amp; Cloud Ready</span>
+        </span>
+        <a href="/" target="_blank" rel="noopener noreferrer" class="btn-admin btn-admin-secondary">
+          👁️ Preview Live Site
+        </a>
+        <button type="button" class="btn-admin btn-admin-primary" id="btnSaveLiveSync">
+          💾 Save &amp; Sync Live
+        </button>
+        <button type="button" class="btn-admin btn-admin-danger" id="btnLogoutAdmin">
+          🔒 Logout
+        </button>
+      </div>
+    </header>
+
+    <!-- Tabs Navigation Bar -->
+    <nav class="admin-nav-bar" aria-label="CMS Navigation Tabs">
+      <div class="admin-tab-btn-row">
+        <button type="button" class="admin-tab-btn active" data-tab="catalog">
+          <span>📦 Products &amp; Catalog</span>
+        </button>
+        <button type="button" class="admin-tab-btn" data-tab="pricing">
+          <span>⚙️ Pricing &amp; Size Rules</span>
+        </button>
+        <button type="button" class="admin-tab-btn" data-tab="cms">
+          <span>✍️ Homepage CMS Text</span>
+        </button>
+        <button type="button" class="admin-tab-btn" data-tab="studio">
+          <span>🎨 3D Studio &amp; Customizer</span>
+        </button>
+        <button type="button" class="admin-tab-btn" data-tab="leads">
+          <span>💬 Leads &amp; Orders (<span id="leadsCountBadge">0</span>)</span>
+        </button>
+        <button type="button" class="admin-tab-btn" data-tab="settings">
+          <span>🛡️ Global Settings &amp; SEO</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="admin-main">
+
+      <!-- ====================================================================
+           TAB 1: PRODUCT & CATALOG MANAGER (FULL C.R.U.D.)
+           ==================================================================== -->
+      <section class="admin-pane active" id="pane-catalog">
+        <div class="pane-header">
+          <div>
+            <h2 class="pane-title">Product Catalog Manager</h2>
+            <p class="pane-sub">Add, edit, reorder, or toggle visibility for all products displayed in the store.</p>
+          </div>
+          <button type="button" class="btn-admin btn-admin-primary" id="btnOpenAddProduct">
+            ＋ Add New Product
+          </button>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="admin-card" style="padding:1rem 1.25rem;">
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+            <div style="display:flex; gap:0.75rem; flex:1; min-width:280px;">
+              <input type="text" id="catalogSearchInput" class="admin-input" placeholder="Search products by title or finish..." />
+              <select id="catalogCategoryFilter" class="admin-select" style="max-width:200px;">
+                <option value="all">All Categories</option>
+              </select>
+            </div>
+            <div style="color:var(--admin-text-muted); font-size:0.85rem; font-weight:600;">
+              Total: <strong id="catalogTotalCount" style="color:var(--admin-gold);">0</strong> items
+            </div>
+          </div>
+        </div>
+
+        <!-- Products Table -->
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th style="width:70px;">Image</th>
+                <th>Title &amp; Specifications</th>
+                <th>Category</th>
+                <th>Badge</th>
+                <th>Pricing (S / M / L)</th>
+                <th>Status</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="catalogTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           TAB 2: PRICING ENGINE & SIZE CALCULATOR RULES
+           ==================================================================== -->
+      <section class="admin-pane" id="pane-pricing">
+        <div class="pane-header">
+          <div>
+            <h2 class="pane-title">Pricing Engine &amp; Size Calculator</h2>
+            <p class="pane-sub">Configure live size slider bounds, base rates, wood multipliers, and promotional banners.</p>
+          </div>
+        </div>
+
+        <!-- Site-Wide Promo Banner -->
+        <div class="admin-card">
+          <div class="card-title">
+            <span>Site-Wide Promotional Top Bar Banner</span>
+            <label style="display:inline-flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.85rem;">
+              <input type="checkbox" id="promoBannerActive" />
+              <span>Enable Banner</span>
+            </label>
+          </div>
+          <div class="admin-grid-3">
+            <div class="admin-field">
+              <label for="promoBadge">Badge Text</label>
+              <input type="text" id="promoBadge" class="admin-input" placeholder="e.g. LIMITED DROP" />
+            </div>
+            <div class="admin-field" style="grid-column: span 2;">
+              <label for="promoText">Announcement Text</label>
+              <input type="text" id="promoText" class="admin-input" placeholder="e.g. Free Laser Engraving on all orders..." />
+            </div>
+          </div>
+          <div class="admin-grid-2">
+            <div class="admin-field">
+              <label for="promoDiscount">Discount Percentage (%)</label>
+              <input type="number" id="promoDiscount" class="admin-input" min="0" max="90" placeholder="10" />
+            </div>
+            <div class="admin-field">
+              <label for="promoLink">Call to Action Link</label>
+              <input type="text" id="promoLink" class="admin-input" placeholder="#collections" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Size Calculator Bounds & Formulas -->
+        <div class="admin-card">
+          <div class="card-title">Size Calculator Bounds &amp; Rate Formulas</div>
+          <div class="admin-grid-2">
+            <div class="admin-field">
+              <label for="calcMinCm">Minimum Slider Length (cm)</label>
+              <input type="number" id="calcMinCm" class="admin-input" value="30" />
+            </div>
+            <div class="admin-field">
+              <label for="calcMaxCm">Maximum Slider Length (cm)</label>
+              <input type="number" id="calcMaxCm" class="admin-input" value="150" />
+            </div>
+          </div>
+          <div class="admin-grid-2">
+            <div class="admin-field">
+              <label for="calcCutoutBase">Matte Silhouette Cutout Base Fee ($)</label>
+              <input type="number" step="0.5" id="calcCutoutBase" class="admin-input" value="28" />
+            </div>
+            <div class="admin-field">
+              <label for="calcCutoutPerCm">Matte Silhouette Per-cm Rate ($/cm)</label>
+              <input type="number" step="0.05" id="calcCutoutPerCm" class="admin-input" value="0.95" />
+            </div>
+          </div>
+          <div class="admin-grid-2">
+            <div class="admin-field">
+              <label for="calcReliefBase">3D CNC Relief Base Fee ($)</label>
+              <input type="number" step="0.5" id="calcReliefBase" class="admin-input" value="45" />
+            </div>
+            <div class="admin-field">
+              <label for="calcReliefPerCm">3D CNC Relief Per-cm Rate ($/cm)</label>
+              <input type="number" step="0.05" id="calcReliefPerCm" class="admin-input" value="1.45" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Wood Multipliers & Currency -->
+        <div class="admin-card">
+          <div class="card-title">Wood Finish Multipliers &amp; Currency</div>
+          <div class="admin-grid-4">
+            <div class="admin-field">
+              <label for="multOak">European Oak Rate</label>
+              <input type="number" step="0.05" id="multOak" class="admin-input" value="1.0" />
+            </div>
+            <div class="admin-field">
+              <label for="multWalnut">Solid Walnut Rate</label>
+              <input type="number" step="0.05" id="multWalnut" class="admin-input" value="1.25" />
+            </div>
+            <div class="admin-field">
+              <label for="multCarbon">Carbon Black Rate</label>
+              <input type="number" step="0.05" id="multCarbon" class="admin-input" value="1.1" />
+            </div>
+            <div class="admin-field">
+              <label for="multCedar">Lebanese Cedar Rate</label>
+              <input type="number" step="0.05" id="multCedar" class="admin-input" value="1.15" />
+            </div>
+          </div>
+          <div class="admin-grid-2">
+            <div class="admin-field">
+              <label for="primaryCurrencySymbol">Primary Currency Symbol</label>
+              <input type="text" id="primaryCurrencySymbol" class="admin-input" value="$" />
+            </div>
+            <div class="admin-field">
+              <label for="primaryCurrencyLabel">Currency Button Label</label>
+              <input type="text" id="primaryCurrencyLabel" class="admin-input" value="USD $" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           TAB 3: HOMEPAGE TEXT & VISUAL ASSETS (CMS)
+           ==================================================================== -->
+      <section class="admin-pane" id="pane-cms">
+        <div class="pane-header">
+          <div>
+            <h2 class="pane-title">Homepage Text &amp; Visual Assets (CMS)</h2>
+            <p class="pane-sub">Update the hero section, the craft process steps, FAQs, and brand heritage story.</p>
+          </div>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="admin-card">
+          <div class="card-title">Hero Section Copy &amp; Images</div>
+          <div class="admin-field">
+            <label for="heroGoldBadge">Top Gold Badge Text</label>
+            <input type="text" id="heroGoldBadge" class="admin-input" />
+          </div>
+          <div class="admin-field">
+            <label for="heroHeadline">Main Headline (HTML Supported)</label>
+            <input type="text" id="heroHeadline" class="admin-input" />
+          </div>
+          <div class="admin-field">
+            <label for="heroSubheadline">Subheadline</label>
+            <textarea id="heroSubheadline" class="admin-textarea"></textarea>
+          </div>
+          <div class="admin-grid-2">
+            <div class="admin-field">
+              <label for="heroImage1">Slide 1: Supercar Silhouette Image URL</label>
+              <input type="text" id="heroImage1" class="admin-input" />
+            </div>
+            <div class="admin-field">
+              <label for="heroImage2">Slide 2: 3D Relief Masterpiece Image URL</label>
+              <input type="text" id="heroImage2" class="admin-input" />
+            </div>
+          </div>
+        </div>
+
+        <!-- The Craft 3 Steps -->
+        <div class="admin-card">
+          <div class="card-title">“The Craft” — 3 Workshop Steps</div>
+          <div class="admin-grid-3">
+            <div style="background:var(--admin-surface); padding:1rem; border-radius:var(--admin-radius-sm); border:1px solid var(--admin-border);">
+              <strong style="color:var(--admin-gold); font-size:0.85rem; display:block; margin-bottom:0.5rem;">STEP 01</strong>
+              <div class="admin-field">
+                <label for="craft1Title">Title</label>
+                <input type="text" id="craft1Title" class="admin-input" />
+              </div>
+              <div class="admin-field">
+                <label for="craft1Desc">Description</label>
+                <textarea id="craft1Desc" class="admin-textarea" style="min-height:75px;"></textarea>
+              </div>
+            </div>
+            <div style="background:var(--admin-surface); padding:1rem; border-radius:var(--admin-radius-sm); border:1px solid var(--admin-border);">
+              <strong style="color:var(--admin-gold); font-size:0.85rem; display:block; margin-bottom:0.5rem;">STEP 02</strong>
+              <div class="admin-field">
+                <label for="craft2Title">Title</label>
+                <input type="text" id="craft2Title" class="admin-input" />
+              </div>
+              <div class="admin-field">
+                <label for="craft2Desc">Description</label>
+                <textarea id="craft2Desc" class="admin-textarea" style="min-height:75px;"></textarea>
+              </div>
+            </div>
+            <div style="background:var(--admin-surface); padding:1rem; border-radius:var(--admin-radius-sm); border:1px solid var(--admin-border);">
+              <strong style="color:var(--admin-gold); font-size:0.85rem; display:block; margin-bottom:0.5rem;">STEP 03</strong>
+              <div class="admin-field">
+                <label for="craft3Title">Title</label>
+                <input type="text" id="craft3Title" class="admin-input" />
+              </div>
+              <div class="admin-field">
+                <label for="craft3Desc">Description</label>
+                <textarea id="craft3Desc" class="admin-textarea" style="min-height:75px;"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FAQs & Brand Story -->
+        <div class="admin-card">
+          <div class="card-title">
+            <span>Frequently Asked Questions</span>
+            <button type="button" class="btn-admin btn-admin-secondary" id="btnAddFaqBtn">＋ Add Question</button>
+          </div>
+          <div id="faqListContainer" style="display:flex; flex-direction:column; gap:0.75rem; margin-bottom:1.5rem;">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="card-title" style="margin-top:1.5rem;">Our Heritage &amp; Brand Story</div>
+          <div class="admin-field">
+            <label for="brandStory">Brand Narrative</label>
+            <textarea id="brandStory" class="admin-textarea" style="min-height:100px;"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           TAB 4: INTERACTIVE STUDIO & 3D CUSTOMIZER SETTINGS
+           ==================================================================== -->
+      <section class="admin-pane" id="pane-studio">
+        <div class="pane-header">
+          <div>
+            <h2 class="pane-title">Interactive Studio &amp; 3D Customizer</h2>
+            <p class="pane-sub">Manage Wall Vibe room textures, default test pieces, wood finishes, and custom engraving pricing.</p>
+          </div>
+        </div>
+
+        <!-- Wall Vibe Backgrounds -->
+        <div class="admin-card">
+          <div class="card-title">
+            <span>Wall Vibe Simulator — Room Textures</span>
+            <button type="button" class="btn-admin btn-admin-secondary" id="btnAddWallBgBtn">＋ Add Room Wall</button>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th style="width:70px;">Preview</th>
+                  <th>Wall Texture Name</th>
+                  <th>Image File / URL</th>
+                  <th>Lighting Profile</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="wallBgTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Custom Carve Configurator -->
+        <div class="admin-card">
+          <div class="card-title">Custom Carve Configurator Options</div>
+          <div class="admin-grid-2">
+            <div class="admin-field">
+              <label for="engravingLimit">Laser Engraving Character Limit</label>
+              <input type="number" id="engravingLimit" class="admin-input" value="60" />
+            </div>
+            <div class="admin-field">
+              <label for="engravingPrice">Engraving Fee ($ USD, 0 = Free)</label>
+              <input type="number" id="engravingPrice" class="admin-input" value="10" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           TAB 5: LEADS & WHATSAPP ORDER LOG
+           ==================================================================== -->
+      <section class="admin-pane" id="pane-leads">
+        <div class="pane-header">
+          <div>
+            <h2 class="pane-title">Leads &amp; WhatsApp Order Inquiries</h2>
+            <p class="pane-sub">Live log of customers who checked out via WhatsApp or submitted custom commission specs.</p>
+          </div>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button type="button" class="btn-admin btn-admin-secondary" id="btnRefreshLeads">
+              🔄 Refresh
+            </button>
+            <button type="button" class="btn-admin btn-admin-secondary" id="btnExportLeadsCsv">
+              📥 Export CSV
+            </button>
+            <button type="button" class="btn-admin btn-admin-secondary" id="btnExportLeadsJson">
+              📥 Export JSON
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Date &amp; Time</th>
+                <th>Customer</th>
+                <th>Phone / WhatsApp</th>
+                <th>Items / Commission</th>
+                <th>Total Value</th>
+                <th>Status</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="leadsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           TAB 6: GLOBAL SETTINGS, SEO & INTEGRATIONS
+           ==================================================================== -->
+      <section class="admin-pane" id="pane-settings">
+        <div class="pane-header">
+          <div>
+            <h2 class="pane-title">Global Settings &amp; SEO</h2>
+            <p class="pane-sub">Studio contact information, search engine optimization, Admin PIN security, and JSON backups.</p>
+          </div>
+        </div>
+
+        <!-- Studio Contact Info -->
+        <div class="admin-card">
+          <div class="card-title">Studio Contact &amp; Concierge Details</div>
+          <div class="admin-grid-2">
+            <div class="admin-field">
+              <label for="settingsWhatsApp">WhatsApp Business Number (digits without +)</label>
+              <input type="text" id="settingsWhatsApp" class="admin-input" value="96170360671" />
+            </div>
+            <div class="admin-field">
+              <label for="settingsPhone">Direct Studio Phone Call</label>
+              <input type="text" id="settingsPhone" class="admin-input" value="+961 70 360 671" />
+            </div>
+          </div>
+          <div class="admin-grid-2">
+            <div class="admin-field">
+              <label for="settingsEmail">Concierge Email</label>
+              <input type="email" id="settingsEmail" class="admin-input" value="concierge@basma-studio.com" />
+            </div>
+            <div class="admin-field">
+              <label for="settingsInstagram">Instagram Handle</label>
+              <input type="text" id="settingsInstagram" class="admin-input" value="@basma.llb" />
+            </div>
+          </div>
+          <div class="admin-field">
+            <label for="settingsLocation">Atelier / Workshop Location</label>
+            <input type="text" id="settingsLocation" class="admin-input" value="Beirut &amp; Mount Lebanon Atelier" />
+          </div>
+        </div>
+
+        <!-- SEO & OpenGraph Meta -->
+        <div class="admin-card">
+          <div class="card-title">Search Engine Optimization (SEO) &amp; Social Meta</div>
+          <div class="admin-field">
+            <label for="seoTitle">Page Title Tag</label>
+            <input type="text" id="seoTitle" class="admin-input" />
+          </div>
+          <div class="admin-field">
+            <label for="seoDesc">Meta Description</label>
+            <textarea id="seoDesc" class="admin-textarea" style="min-height:75px;"></textarea>
+          </div>
+          <div class="admin-field">
+            <label for="seoKeywords">Meta Keywords</label>
+            <input type="text" id="seoKeywords" class="admin-input" />
+          </div>
+          <div class="admin-field">
+            <label for="seoOgImage">OpenGraph Social Preview Image URL</label>
+            <input type="text" id="seoOgImage" class="admin-input" />
+          </div>
+        </div>
+
+        <!-- Security & PIN Management -->
+        <div class="admin-card">
+          <div class="card-title">Admin PIN Security (Hashed via SHA-256)</div>
+          <div class="admin-grid-3">
+            <div class="admin-field">
+              <label for="currentPin">Current PIN</label>
+              <input type="password" id="currentPin" class="admin-input" maxlength="16" placeholder="Current PIN" />
+            </div>
+            <div class="admin-field">
+              <label for="newPin">New PIN</label>
+              <input type="password" id="newPin" class="admin-input" maxlength="16" placeholder="New PIN" />
+            </div>
+            <div class="admin-field">
+              <label for="confirmNewPin">Confirm New PIN</label>
+              <input type="password" id="confirmNewPin" class="admin-input" maxlength="16" placeholder="Confirm New PIN" />
+            </div>
+          </div>
+          <button type="button" class="btn-admin btn-admin-secondary" id="btnUpdatePin">
+            Update Admin PIN
+          </button>
+        </div>
+
+        <!-- Backup & Live Sync -->
+        <div class="admin-card">
+          <div class="card-title">Backup, Restore &amp; Factory Reset</div>
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:1rem;">
+            <button type="button" class="btn-admin btn-admin-secondary" id="btnExportJson">
+              📥 Export store-state.json Backup
+            </button>
+            <label class="btn-admin btn-admin-secondary" style="cursor:pointer;">
+              📤 Import JSON Snapshot
+              <input type="file" id="inputImportJson" accept=".json,application/json" style="display:none;" />
+            </label>
+            <button type="button" class="btn-admin btn-admin-danger" id="btnResetDefaults">
+              ⚠️ Reset Store to Factory Defaults
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: ADD / EDIT PRODUCT
+       ======================================================================== -->
+  <div class="admin-modal-backdrop" id="productModalBackdrop">
+    <div class="admin-modal">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <h3 class="pane-title" id="productModalTitle" style="font-size:1.35rem;">Add New Product</h3>
+        <button type="button" class="btn-icon-sm" id="btnCloseProductModal" style="font-size:1.1rem; padding:0.25rem 0.6rem;">✕</button>
+      </div>
+
+      <input type="hidden" id="editProdId" />
+
+      <div class="admin-field">
+        <label for="prodTitle">Product Title *</label>
+        <input type="text" id="prodTitle" class="admin-input" placeholder="e.g., 911 GT3 RS Aero Profile Cutout" required />
+      </div>
+
+      <div class="admin-grid-2">
+        <div class="admin-field">
+          <label for="prodCategory">Category *</label>
+          <select id="prodCategory" class="admin-select">
+            <option value="garage">The Garage (Car Silhouettes)</option>
+            <option value="relief">3D Relief &amp; Heritage</option>
+            <option value="anime">Anime &amp; Gaming Lounge</option>
+          </select>
+        </div>
+        <div class="admin-field">
+          <label for="prodBadge">Style Badge Tag</label>
+          <input type="text" id="prodBadge" class="admin-input" placeholder="e.g. Matte Wood Cutout or 3D CNC Relief" />
+        </div>
+      </div>
+
+      <!-- Image Drag & Drop / URL -->
+      <div class="admin-field">
+        <label>Product Photography *</label>
+        <div class="admin-dropzone" id="prodImageDropzone">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--admin-gold);">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <span style="font-size:0.85rem; font-weight:600;">Drag &amp; drop an image, or click to browse</span>
+          <span style="font-size:0.75rem; color:var(--admin-text-muted);">Automatically converts to lightweight WebP</span>
+          <input type="file" id="prodImageFileInput" accept="image/*" style="display:none;" />
+          <img id="prodImagePreview" class="dropzone-preview" style="display:none;" alt="Preview" />
+        </div>
+        <input type="text" id="prodImageUrl" class="admin-input" placeholder="Or enter image URL path (e.g. assets/...)" style="margin-top:0.5rem;" />
+      </div>
+
+      <div class="admin-field">
+        <label for="prodFinish">Material &amp; Finish Description</label>
+        <input type="text" id="prodFinish" class="admin-input" placeholder="e.g. Matte Carbon Black (15mm Layered Wood)" />
+      </div>
+
+      <div class="admin-field">
+        <label for="prodDesc">Full Description &amp; Specifications</label>
+        <textarea id="prodDesc" class="admin-textarea" placeholder="Crafted with precision laser routing and hand-rubbed finish..."></textarea>
+      </div>
+
+      <!-- S / M / L Tiered Pricing -->
+      <label style="font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--admin-text-muted); display:block; margin-bottom:0.45rem;">
+        Multi-Tier Sizing &amp; Pricing (USD $)
+      </label>
+      <div style="background:var(--admin-card); padding:1rem; border-radius:var(--admin-radius-sm); border:1px solid var(--admin-border); margin-bottom:1.5rem;">
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:0.75rem; margin-bottom:0.75rem;">
+          <input type="text" id="sizeSmallLabel" class="admin-input" value="Small — 45 × 25 cm" placeholder="Small Size Label" />
+          <input type="number" id="sizeSmallPrice" class="admin-input" value="54" placeholder="Price $" />
+        </div>
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:0.75rem; margin-bottom:0.75rem;">
+          <input type="text" id="sizeMedLabel" class="admin-input" value="Medium — 75 × 40 cm" placeholder="Medium Size Label" />
+          <input type="number" id="sizeMedPrice" class="admin-input" value="89" placeholder="Price $" />
+        </div>
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:0.75rem;">
+          <input type="text" id="sizeLargeLabel" class="admin-input" value="Large — 110 × 60 cm" placeholder="Large Size Label" />
+          <input type="number" id="sizeLargePrice" class="admin-input" value="129" placeholder="Price $" />
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+        <button type="button" class="btn-admin btn-admin-secondary" id="btnCancelProductModal">Cancel</button>
+        <button type="button" class="btn-admin btn-admin-primary" id="btnSaveProductModal">Save Product</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="admin-toast" id="adminToast">
+    <span id="adminToastMsg">Notification message</span>
+  </div>
+
+  <script type="module" src="/src/admin.js"></script>
+</body>
+</html>

@@ -4,15 +4,110 @@
 
 import { DEFAULT_PIN_SHA256 } from '../utils/security.js';
 
+export const DEFAULT_CATEGORIES = [
+  { id: 'all', label: 'All Collections' },
+  { id: 'garage', label: 'The Garage (Car Silhouettes)' },
+  { id: 'relief', label: '3D Relief & Heritage' },
+  { id: 'anime', label: 'Anime & Gaming Lounge' }
+];
+
 export const DEFAULT_SETTINGS = {
   whatsappNumber: '96170360671',
   studioEmail: 'concierge@basma-studio.com',
+  studioPhone: '+961 70 360 671',
+  studioLocation: 'Beirut & Mount Lebanon Atelier',
+  instagramHandle: '@basma.llb',
   primaryCurrencySymbol: '$',
   primaryCurrencyLabel: 'USD $',
   calcCutoutBase: 28,
   calcCutoutPerCm: 0.95,
   calcReliefBase: 45,
   calcReliefPerCm: 1.45,
+  calcMinCm: 30,
+  calcMaxCm: 150,
+  woodMultipliers: {
+    oak: 1.0,
+    walnut: 1.25,
+    carbon: 1.1,
+    cedar: 1.15
+  },
+  promoBanner: {
+    active: true,
+    badge: 'LIMITED DROP',
+    text: 'Special Spring Drop: Free Bespoke Laser Engraving on all 3D Relief & Garage Silhouettes',
+    discountPercent: 10,
+    link: '#collections'
+  },
+  cmsContent: {
+    hero: {
+      headline: 'Automotive Wall Art &amp; Precision 3D Wood Carvings',
+      subheadline: 'From sleek matte-black supercar silhouettes to deeply sculpted solid natural walnut 3D CNC relief masterpieces. Handcrafted in Lebanon with 0.1mm micron tolerance.',
+      goldBadge: 'Handcrafted in Lebanon • 0.1mm CNC Precision',
+      image1: 'assets/hero-car-silhouette.jpg',
+      image2: 'assets/hero-wood-relief.jpg'
+    },
+    craftSteps: [
+      {
+        number: '01',
+        title: '3D CAD Modeling &amp; Vectorization',
+        description: 'Every vehicle line and anatomical contour is modeled with aerospace CAD curves to preserve true proportions and airflow dynamics.'
+      },
+      {
+        number: '02',
+        title: '0.1mm Multi-Axis CNC Milling',
+        description: 'High-speed diamond tooling carves architectural relief gradients into raw hardwood with microscopic depth variations.'
+      },
+      {
+        number: '03',
+        title: 'Artisanal Hand Finishing &amp; Oil',
+        description: 'Each piece undergoes 3-stage hand sanding and a treatment of organic beeswax and penetrating Danish oil to seal the grain.'
+      }
+    ],
+    faqs: [
+      {
+        question: 'What materials and wood species do you use?',
+        answer: 'We sculpt exclusively using prime-grade natural American Walnut, European White Oak, fragrant Lebanese Cedar, and high-density moisture-resistant architectural wood composite with matte carbon-black lacquer.'
+      },
+      {
+        question: 'How do I hang and mount the wall art?',
+        answer: 'Every piece includes pre-installed concealed floating wall standoffs, steel mounting brackets, and brass drywall anchors for a floating 15mm shadow-line effect.'
+      },
+      {
+        question: 'How long does custom production and delivery take in Lebanon?',
+        answer: 'In-stock pieces ship within 24 to 48 hours across Lebanon. Bespoke commissions typically take 3 to 5 business days from 3D design approval. We offer Cash on Delivery across all Lebanese districts.'
+      },
+      {
+        question: 'Can I order a custom car model or personal design?',
+        answer: 'Yes! Use our Custom Carve Configurator or message us on WhatsApp with any photo, silhouette, or company logo. We will provide a 3D digital mockup before carving.'
+      }
+    ],
+    brandStory: 'Founded at the intersection of motorsport passion and traditional Levant woodworking, Basma (@basma.llb) crafts architectural statement wall art. We combine high-speed multi-axis CNC milling with hours of meticulous hand-rubbed oil finishing to bring automotive curves and heritage sculpture to life.'
+  },
+  wallVibeSettings: {
+    backgrounds: [
+      { id: 'living', label: 'Sunlit Living Room', url: 'assets/wall-livingroom.jpg', dark: false },
+      { id: 'garage', label: 'Executive Garage', url: 'assets/wall-garage.jpg', dark: true },
+      { id: 'lounge', label: 'Minimal Studio', url: 'assets/wall-studio.jpg', dark: false },
+      { id: 'concrete', label: 'Industrial Concrete', url: 'assets/wall-concrete.jpg', dark: true }
+    ],
+    defaultPieces: ['prod-aero-gt', 'prod-sacred-relief', 'prod-porsche-gt3']
+  },
+  customizerSettings: {
+    woodFinishes: [
+      { id: 'carbon', name: 'Matte Carbon Black', priceFactor: 1.0 },
+      { id: 'walnut', name: 'Natural Solid Walnut', priceFactor: 1.25 },
+      { id: 'oak', name: 'White European Oak', priceFactor: 1.15 },
+      { id: 'cedar', name: 'Aged Cedar Tone', priceFactor: 1.2 }
+    ],
+    engravingCharLimit: 60,
+    engravingPriceUSD: 10
+  },
+  seoMeta: {
+    title: 'BASMA | بصمة — Precision 3D CNC Wood Carvings & Automotive Wall Art (@basma.llb)',
+    description: 'Basma (بصمة | @basma.llb) — Luxury Lebanese studio crafting Precision 3D CNC Solid Wood Relief Carvings and Sleek Matte-Black Layered Automotive & Anime Wall Art Silhouettes.',
+    keywords: 'Basma, بصمة, basma.llb, 3D CNC wood carving, automotive wall art, car silhouette wall decor, Lebanon woodwork, custom wood relief, Porsche wall silhouette, anime wood art',
+    ogImage: 'https://basma-llb-studio.vercel.app/assets/hero-car-silhouette.jpg'
+  },
   adminPinHash: DEFAULT_PIN_SHA256,
   cloudWebhookUrl: ''
 };

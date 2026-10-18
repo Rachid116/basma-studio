@@ -54,93 +54,32 @@ const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = decodeURIComponent(parsedUrl.pathname);
 
-  // 1. Admin PIN Hash Verification Endpoint: POST /api/admin-auth
-  if (pathname === '/api/admin-auth' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk;
-      if (body.length > 32 * 1024) req.destroy();
-    });
-    req.on('end', () => {
-      try {
-        const parsed = JSON.parse(body || '{}');
-        const candidateHash = String(parsed.pinHash || '').trim().toLowerCase();
-        let expectedHash = String(process.env.VITE_ADMIN_PIN_HASH || DEFAULT_PIN_HASH).trim().toLowerCase();
-        try {
-          const stateRaw = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
-          if (stateRaw?.settings?.adminPinHash) {
-            expectedHash = String(stateRaw.settings.adminPinHash).trim().toLowerCase();
-          }
-        } catch (_) {
-          // Use default hash
-        }
-        const a = Buffer.from(candidateHash, 'utf8');
-        const b = Buffer.from(expectedHash, 'utf8');
-        const ok = a.length === 64 && a.length === b.length && crypto.timingSafeEqual(a, b);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok }));
-      } catch (_) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: false }));
-      }
-    });
-    return;
+  // 1. Admin PIN Auth Endpoints: /api/admin/auth & /api/admin-auth
+  if (pathname === '/api/admin/auth' || pathname === '/api/admin-auth') {
+    return require('./api/admin-auth.js')(req, res);
   }
 
-  // 2. Live Admin CMS Sync Endpoint: GET or POST /api/store-state
-  if (pathname === '/api/store-state') {
-    if (req.method === 'GET') {
-      fs.readFile(STATE_FILE, 'utf8', (err, data) => {
-        if (err) {
-          res.writeHead(404, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'State file not found' }));
-          return;
-        }
-        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-        res.end(data);
-      });
-      return;
-    }
-
-    if (req.method === 'POST') {
-      let body = '';
-      req.on('data', chunk => {
-        body += chunk;
-        if (body.length > 15 * 1024 * 1024) req.destroy();
-      });
-      req.on('end', () => {
-        try {
-          const parsed = JSON.parse(body);
-          if (parsed.settings && parsed.settings.adminPin) {
-            delete parsed.settings.adminPin;
-          }
-          const serialized = JSON.stringify(parsed, null, 2);
-          fs.writeFile(STATE_FILE, serialized, 'utf8', (err) => {
-            if (err) {
-              res.writeHead(500, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ ok: false, error: err.message }));
-              return;
-            }
-            // Mirror to dist/store-state.json if dist exists
-            const distState = path.join(DIST_DIR, 'store-state.json');
-            if (fs.existsSync(DIST_DIR)) {
-              fs.writeFile(distState, serialized, 'utf8', () => {});
-            }
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ ok: true, syncedAt: new Date().toISOString() }));
-          });
-        } catch (_) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ok: false, error: 'Invalid JSON payload' }));
-        }
-      });
-      return;
-    }
+  // 2. Live Admin Store State Sync Endpoints: /api/admin/data & /api/store-state
+  if (pathname === '/api/admin/data' || pathname === '/api/store-state' || pathname === '/api/admin/save') {
+    return require('./api/store-state.js')(req, res);
   }
 
-  // 3. Serve Static Files (Prefer compiled `dist/` when built, fallback to `public/` and `ROOT_DIR`)
+  // 3. Customer Orders & Inquiries Endpoints: /api/orders & /api/leads
+  if (pathname === '/api/orders' || pathname === '/api/leads') {
+    return require('./api/leads.js')(req, res);
+  }
+
+  // 4. File / Image Upload Endpoint: /api/upload
+  if (pathname === '/api/upload') {
+    return require('./api/upload.js')(req, res);
+  }
+
+  // 4. Serve Static Files (Prefer compiled `dist/` when built, fallback to `public/` and `ROOT_DIR`)
   let safePath = path.normalize(pathname).replace(/^(\.\.[/\\])+/, '');
   if (safePath === '/' || safePath === '\\') safePath = '/index.html';
+  if (safePath === '/admin' || safePath === '/admin/' || safePath === '\\admin' || safePath === '\\admin\\') {
+    safePath = '/admin.html';
+  }
 
   const candidatePaths = [
     path.join(DIST_DIR, safePath),
