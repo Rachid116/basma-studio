@@ -2687,11 +2687,14 @@ footer {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-nav-backdrop.open {
   opacity: 1;
-  pointer-events: auto;
+  pointer-events: auto !important;
 }
 
 .mobile-nav-drawer {
@@ -2733,16 +2736,43 @@ body[dir="rtl"] .mobile-nav-drawer.open {
 }
 
 .mobile-drawer-close {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   color: #FFF;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  position: relative;
+  z-index: 60;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  transition: all 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-drawer-close:hover,
+.mobile-drawer-close:focus {
+  background: rgba(197, 155, 39, 0.22);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold-light);
+  transform: scale(1.05);
+}
+
+.mobile-drawer-close:active {
+  background: rgba(197, 155, 39, 0.38);
+  transform: scale(0.94);
+}
+
+.mobile-drawer-close svg {
+  pointer-events: none;
 }
 
 .mobile-drawer-body {
