@@ -5,17 +5,32 @@
 export function initCraftProcess() {
   const stage = document.getElementById('carveCompareStage');
   const beforeLayer = document.getElementById('compareBeforeLayer');
-  const handle = document.getElementById('compareHandle');
-  if (!stage || !beforeLayer || !handle) return;
+  const divider = document.getElementById('compareSpindleDivider') || document.getElementById('compareHandle');
+  const rangeInput = document.getElementById('carveCompareRangeInput');
 
-  let isDragging = false;
+  if (!stage || !beforeLayer || !divider) return;
 
   function setSliderPercent(pct) {
-    const clamped = Math.max(4, Math.min(96, pct));
+    const clamped = Math.max(0, Math.min(100, pct));
     beforeLayer.style.clipPath = `inset(0 ${(100 - clamped).toFixed(2)}% 0 0)`;
-    handle.style.left = `${clamped.toFixed(2)}%`;
-    handle.setAttribute('aria-valuenow', Math.round(clamped));
+    divider.style.left = `${clamped.toFixed(2)}%`;
+    divider.setAttribute('aria-valuenow', Math.round(clamped));
+    if (rangeInput && Number(rangeInput.value) !== Math.round(clamped)) {
+      rangeInput.value = Math.round(clamped);
+    }
   }
+
+  // 1. Native HTML5 range input (60 FPS hardware-accelerated touch & drag on iOS, Android & Desktop)
+  if (rangeInput) {
+    const handleRangeChange = (e) => {
+      setSliderPercent(Number(e.target.value));
+    };
+    rangeInput.addEventListener('input', handleRangeChange);
+    rangeInput.addEventListener('change', handleRangeChange);
+  }
+
+  // 2. Direct Pointer & Touch Events as complementary drag handler
+  let isDragging = false;
 
   function updateFromClientX(clientX) {
     const rect = stage.getBoundingClientRect();
@@ -37,18 +52,29 @@ export function initCraftProcess() {
     updateFromClientX(e.clientX);
   });
 
-  const stopSlide = () => { isDragging = false; };
-  stage.addEventListener('pointerup', stopSlide);
-  stage.addEventListener('pointercancel', stopSlide);
+  const stopDrag = (e) => {
+    if (isDragging) {
+      isDragging = false;
+      if (stage.releasePointerCapture && e && e.pointerId) {
+        try { stage.releasePointerCapture(e.pointerId); } catch (_) {}
+      }
+    }
+  };
+  stage.addEventListener('pointerup', stopDrag);
+  stage.addEventListener('pointercancel', stopDrag);
 
-  handle.addEventListener('keydown', (e) => {
-    const current = parseFloat(handle.getAttribute('aria-valuenow') || '50');
-    if (e.key === 'ArrowLeft') {
+  // Keyboard accessibility
+  divider.addEventListener('keydown', (e) => {
+    const current = parseFloat(divider.getAttribute('aria-valuenow') || '50');
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
       e.preventDefault();
-      setSliderPercent(current - 5);
-    } else if (e.key === 'ArrowRight') {
+      setSliderPercent(current - 4);
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
       e.preventDefault();
-      setSliderPercent(current + 5);
+      setSliderPercent(current + 4);
     }
   });
+
+  // Initial state: 50% split
+  setSliderPercent(50);
 }

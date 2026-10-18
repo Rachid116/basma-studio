@@ -2024,14 +2024,14 @@ body[dir="rtl"] .cart-drawer.open {
 .carve-compare-stage {
   position: relative;
   width: 100%;
-  height: clamp(290px, 44vw, 460px);
+  aspect-ratio: 16 / 10;
   border-radius: var(--radius-lg);
   overflow: hidden;
   user-select: none;
-  touch-action: pan-y;
-  cursor: ew-resize;
+  -webkit-user-select: none;
   background: #1B1510;
-  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.55);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.55), var(--shadow-argon-lg);
+  touch-action: none;
 }
 
 .compare-layer {
@@ -2039,126 +2039,136 @@ body[dir="rtl"] .cart-drawer.open {
   inset: 0;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.compare-after img {
+.compare-after img,
+.compare-before img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  filter: contrast(1.06) saturate(1.08);
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
-/* Realistic Raw Uncarved Solid Walnut Slab with Organic Grain & CAD Blueprint */
-.raw-wood-block-surface {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  background:
-    radial-gradient(ellipse at 30% 40%, rgba(168, 118, 68, 0.45) 0%, transparent 60%),
-    radial-gradient(ellipse at 75% 65%, rgba(68, 40, 18, 0.55) 0%, transparent 65%),
-    repeating-linear-gradient(
-      3deg,
-      #7E532F 0px,
-      #8D5E36 7px,
-      #6B4423 15px,
-      #784E2A 24px,
-      #5D3A1D 31px,
-      #845832 42px
-    );
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.compare-after img {
+  filter: contrast(1.05) saturate(1.08);
 }
 
-.raw-wood-grain-lines {
-  position: absolute;
-  inset: 0;
-  background:
-    repeating-radial-gradient(
-      ellipse at -15% 50%,
-      transparent 0,
-      transparent 18px,
-      rgba(38, 20, 8, 0.16) 19px,
-      transparent 21px
-    ),
-    linear-gradient(90deg, rgba(0,0,0,0.22) 0%, transparent 15%, transparent 85%, rgba(0,0,0,0.28) 100%);
-  pointer-events: none;
-}
-
-.raw-wood-cnc-blueprint {
-  position: relative;
+.compare-before {
   z-index: 2;
-  width: 100%;
-  height: 100%;
+  will-change: clip-path;
 }
 
+.compare-before img {
+  filter: contrast(1.02) brightness(0.96);
+}
+
+/* Minimal Floating Translucent Dark Glass Badges */
 .compare-badge {
   position: absolute;
-  bottom: 1rem;
-  padding: 0.45rem 0.95rem;
+  top: 1rem;
+  padding: 0.38rem 0.85rem;
   border-radius: var(--radius-pill);
-  font-size: 0.74rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  background: rgba(20, 20, 20, 0.82);
+  letter-spacing: 0.03em;
+  background: rgba(18, 15, 13, 0.78);
   color: #FAF8F5;
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(197, 155, 39, 0.45);
-  z-index: 4;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  z-index: 5;
   pointer-events: none;
+  white-space: nowrap;
 }
 
-.badge-before {
+.badge-left {
   left: 1rem;
 }
 
-.badge-after {
+.badge-right {
   right: 1rem;
-  background: rgba(78, 49, 25, 0.88);
-  border-color: var(--accent-gold);
 }
 
-.compare-handle {
+/* Smooth Draggable Spindle Divider */
+.compare-spindle-divider {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: 0;
   transform: translateX(-50%);
-  z-index: 10;
+  z-index: 20;
+  pointer-events: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  outline: none;
+  will-change: left;
 }
 
-.compare-handle-line {
+.compare-spindle-line {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 3px;
-  background: linear-gradient(180deg, var(--accent-gold-light), #FFFFFF, var(--accent-gold));
-  box-shadow: 0 0 14px rgba(197, 155, 39, 0.9);
+  width: 2.5px;
+  background: #C59B27;
+  box-shadow: 0 0 12px rgba(197, 155, 39, 0.85), 0 0 4px rgba(0, 0, 0, 0.6);
 }
 
-.compare-handle-knob {
-  width: 48px;
-  height: 48px;
+.compare-spindle-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-gold-light), var(--accent-walnut-dark));
-  color: #FFF;
+  background: linear-gradient(135deg, #E6C265 0%, #C59B27 60%, #8A6413 100%);
+  color: #1A130C;
   border: 2px solid #FFF;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), 0 0 0 4px rgba(197, 155, 39, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(197, 155, 39, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.compare-handle:hover .compare-handle-knob,
-.compare-handle:focus .compare-handle-knob {
-  transform: scale(1.12);
-  box-shadow: 0 8px 25px rgba(197, 155, 39, 0.65), 0 0 0 6px rgba(197, 155, 39, 0.35);
+/* 100% Reliable Touch & Drag Tracking via Transparent Native Range Input */
+.compare-range-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  z-index: 30;
+  cursor: ew-resize;
+  touch-action: none !important;
+  pointer-events: auto !important;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.compare-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 44px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.compare-range-input::-moz-range-thumb {
+  width: 44px;
+  height: 100%;
+  cursor: ew-resize;
+  border: none;
+  background: transparent;
 }
 
 /* 3. Upgraded Wall Vibe Room Simulator: Warm Night Spotlight & Draggable Piece */
@@ -3446,47 +3456,36 @@ svg {
   /* 8. "The Craft" Before/After Split-Screen Slider */
   .carve-compare-wrapper {
     margin-bottom: 2rem;
+    padding: 1.15rem 0.95rem;
     border-radius: var(--radius-lg);
   }
 
   .carve-compare-stage {
-    aspect-ratio: 4 / 3.2;
-    min-height: 225px;
+    aspect-ratio: 1 / 1;
+    min-height: auto;
   }
 
   .compare-badge {
-    font-size: 0.62rem;
-    padding: 0.24rem 0.55rem;
-    top: 0.55rem;
-    max-width: 44%;
+    font-size: 0.72rem;
+    padding: 0.28rem 0.65rem;
+    top: 0.65rem;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
-  .compare-badge-left {
-    left: 0.55rem;
+  .badge-left {
+    left: 0.65rem;
   }
 
-  .compare-badge-right {
-    right: 0.55rem;
+  .badge-right {
+    right: 0.65rem;
   }
 
-  .compare-handle-circle {
+  .compare-spindle-knob {
     width: 38px;
     height: 38px;
-  }
-
-  .compare-caption-overlay {
-    padding: 0.65rem 0.8rem;
-  }
-
-  .compare-caption-overlay h4 {
-    font-size: 0.88rem;
-  }
-
-  .compare-caption-overlay p {
-    font-size: 0.72rem;
   }
 
   .craft-grid {
