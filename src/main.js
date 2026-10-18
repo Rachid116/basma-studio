@@ -18,7 +18,8 @@ import { initCustomStudio, updateCustomConfiguratorEstimate } from './components
 import { initCraftProcess } from './components/sections/CraftProcess.js';
 import {
   storeState,
-  loadPersistentStoreState
+  loadPersistentStoreState,
+  subscribeStore
 } from './services/storeService.js';
 import { injectStructuredDataSchema } from './services/seoSchemaService.js';
 import { hasValidAdminSession } from './utils/security.js';
@@ -57,11 +58,20 @@ function bindLazyAdminTrigger() {
   }
 }
 
+function refreshAllStoreUI() {
+  syncContactAndWhatsAppLinks();
+  renderCatalog();
+  updateSizeCalculator();
+  updateCustomConfiguratorEstimate();
+  applyTranslations();
+  injectStructuredDataSchema(storeState.products, storeState.settings);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   initErrorBoundary();
 
   // Initialize UI & Interactive Sections
-  initNavbar();
+  initNavbar(refreshAllStoreUI);
   initMobileMenu();
   initBreadcrumbs();
   initHero();
@@ -74,14 +84,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   initFooter();
   init3DTiltAndMagneticButtons();
 
-  // Sync store state from localStorage / Cloud / store-state.json
+  // Re-render all dynamic sections whenever storeState changes
+  subscribeStore(() => {
+    refreshAllStoreUI();
+  });
+
+  // Sync store state from Supabase Cloud / Serverless API / fallback
   await loadPersistentStoreState();
-  syncContactAndWhatsAppLinks();
-  renderCatalog();
-  updateSizeCalculator();
-  updateCustomConfiguratorEstimate();
-  applyTranslations();
-  injectStructuredDataSchema(storeState.products, storeState.settings);
+  refreshAllStoreUI();
+
+  // Cross-device & multi-tab live sync: refresh from Supabase when tab gains focus or becomes visible
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      loadPersistentStoreState();
+    }
+  });
+  window.addEventListener('focus', () => {
+    loadPersistentStoreState();
+  });
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'basma_cms_unified_state_v3') {
+      loadPersistentStoreState();
+    }
+  });
 
   // Lazy-load Admin CMS when requested or if session is active
   bindLazyAdminTrigger();

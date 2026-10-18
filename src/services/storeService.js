@@ -247,9 +247,34 @@ export async function applyStoreSnapshot(snapshot) {
         }
       });
     }
+    if (cms.brandStory) {
+      const footerAbout = document.querySelector('[data-i18n="footer_about"]');
+      if (footerAbout) footerAbout.textContent = cms.brandStory;
+    }
   }
 
-  // 4. Dynamic SEO Title & Meta
+  // 4. Dynamic Calculator & Customizer Settings
+  const sizeSlider = document.getElementById('sizeRangeSlider');
+  if (sizeSlider) {
+    if (storeState.settings.calcMinCm) sizeSlider.min = String(storeState.settings.calcMinCm);
+    if (storeState.settings.calcMaxCm) sizeSlider.max = String(storeState.settings.calcMaxCm);
+  }
+  const engInput = document.getElementById('customEngravingInput');
+  if (engInput && storeState.settings.customizerSettings?.engravingCharLimit) {
+    engInput.maxLength = Number(storeState.settings.customizerSettings.engravingCharLimit) || 60;
+  }
+
+  // 5. Dynamic Inline Edits ([data-cms-id])
+  if (storeState.inlineEdits && typeof document !== 'undefined') {
+    document.querySelectorAll('[data-cms-id]').forEach(el => {
+      const id = el.getAttribute('data-cms-id');
+      if (storeState.inlineEdits[id]) {
+        el.innerHTML = storeState.inlineEdits[id];
+      }
+    });
+  }
+
+  // 6. Dynamic SEO Title & Meta
   if (storeState.settings.seoMeta?.title && typeof document !== 'undefined') {
     document.title = storeState.settings.seoMeta.title;
   }
@@ -302,13 +327,13 @@ export async function upsertStoreToSupabase(snapshot) {
   if (!client) return false;
 
   try {
+    const nowIso = new Date().toISOString();
     const { error } = await client
       .from('site_data')
-      .upsert({
-        id: 'main_store',
-        content: snapshot,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' });
+      .upsert([
+        { id: 'main_store', content: snapshot, updated_at: nowIso },
+        { id: 'basma:store_state', content: snapshot, updated_at: nowIso }
+      ], { onConflict: 'id' });
 
     if (error) {
       console.warn('[Basma DB] Supabase upsert error:', error.message);
@@ -327,7 +352,7 @@ export async function upsertStoreToSupabase(snapshot) {
 export async function loadPersistentStoreState() {
   let loaded = false;
 
-  // 1. Try Supabase Cloud Database (Free permanent persistence across all devices & deployments)
+  // 1. Try Supabase Cloud Database directly (Free permanent persistence across all devices)
   try {
     const supabaseData = await fetchStoreFromSupabase();
     if (supabaseData && Array.isArray(supabaseData.products) && supabaseData.products.length > 0) {
@@ -339,7 +364,24 @@ export async function loadPersistentStoreState() {
     }
   } catch (_) {}
 
-  // 2. Fallback to localStorage cache
+  // 2. Fallback to serverless API /api/store-state (also backed by Supabase)
+  if (!loaded) {
+    try {
+      const apiResp = await fetch(`/api/store-state?t=${Date.now()}`, { cache: 'no-store' });
+      if (apiResp.ok) {
+        const remoteData = await apiResp.json();
+        if (remoteData && Array.isArray(remoteData.products) && remoteData.products.length > 0) {
+          await applyStoreSnapshot(remoteData);
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteData));
+          } catch (_) {}
+          loaded = true;
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 3. Fallback to localStorage cache (offline mode only)
   if (!loaded) {
     try {
       const savedRaw = localStorage.getItem(STORAGE_KEY);
@@ -347,20 +389,6 @@ export async function loadPersistentStoreState() {
         const parsed = JSON.parse(savedRaw);
         if (parsed && Array.isArray(parsed.products) && parsed.products.length > 0) {
           await applyStoreSnapshot(parsed);
-          loaded = true;
-        }
-      }
-    } catch (_) {}
-  }
-
-  // 3. Fallback to serverless API /api/store-state
-  if (!loaded) {
-    try {
-      const apiResp = await fetch('/api/store-state', { cache: 'no-store' });
-      if (apiResp.ok) {
-        const remoteData = await apiResp.json();
-        if (remoteData && Array.isArray(remoteData.products) && remoteData.products.length > 0) {
-          await applyStoreSnapshot(remoteData);
           loaded = true;
         }
       }

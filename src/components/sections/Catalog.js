@@ -51,9 +51,10 @@ export function renderCatalog(categoryFilter = currentCatalogFilter) {
   const grid = document.getElementById('catalogGrid');
   if (!grid) return;
 
+  const visibleProducts = (storeState.products || []).filter(p => !p.hidden);
   const filtered = categoryFilter === 'all'
-    ? storeState.products
-    : storeState.products.filter(p => p.category === categoryFilter);
+    ? visibleProducts
+    : visibleProducts.filter(p => p.category === categoryFilter);
 
   const langDict = I18N[storeState.currentLang] || I18N.en;
 

@@ -167,6 +167,25 @@ async function resetAdminPinToDefault(interactive = true) {
     return;
   }
   try {
+    // Strip ?reset from the URL bar immediately so refreshing never re-triggers reset
+    try {
+      if (window.location.search && window.location.search.includes('reset')) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    } catch (_) {}
+
+    // Load latest store data from Supabase first so we NEVER overwrite products/settings with uninitialized defaults
+    try {
+      const existingCloud = await fetchStoreFromSupabase();
+      if (existingCloud && Array.isArray(existingCloud.products) && existingCloud.products.length > 0) {
+        state = {
+          ...state,
+          ...existingCloud,
+          settings: { ...DEFAULT_SETTINGS, ...(existingCloud.settings || {}) }
+        };
+      }
+    } catch (_) {}
+
     saveAdminPinHash(DEFAULT_PIN_SHA256);
     clearAdminSession();
     state.settings.adminPinHash = DEFAULT_PIN_SHA256;
@@ -180,7 +199,7 @@ async function resetAdminPinToDefault(interactive = true) {
       });
     } catch (_) {}
 
-    // Reset in Supabase / persistent cloud database
+    // Reset in Supabase / persistent cloud database while preserving all products & settings
     try {
       await upsertStoreToSupabase(state);
     } catch (_) {}
@@ -1233,8 +1252,17 @@ function resetToFactoryDefaults() {
 // ----------------------------------------------------------------------------
 // INITIALIZATION & EVENT LISTENERS
 // ----------------------------------------------------------------------------
+let autoSaveTimer = null;
+function scheduleAutoSave() {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    saveLiveStoreState();
+  }, 900);
+}
+
 function initAdminApp() {
-  // 1. Check existing session
+  // 1. Pre-load store data from Supabase Cloud immediately and check existing session
+  loadStoreData();
   checkExistingSession();
 
   // 2. Keypad interactions
@@ -1335,6 +1363,7 @@ function initAdminApp() {
     const current = readFaqsFromDOM();
     current.push({ question: 'New Question?', answer: 'Detailed studio answer...' });
     renderFaqList(current);
+    scheduleAutoSave();
   });
 
   // 7. Studio additions
@@ -1347,6 +1376,24 @@ function initAdminApp() {
       dark: false
     });
     renderWallBgTable(current);
+    scheduleAutoSave();
+  });
+
+  // 7b. Auto-save on input/change across Pricing, CMS, Studio, and Settings panes
+  ['pane-pricing', 'pane-cms', 'pane-studio', 'pane-settings'].forEach(paneId => {
+    const paneEl = document.getElementById(paneId);
+    if (!paneEl) return;
+    const handleEdit = (e) => {
+      const target = e.target;
+      if (!target || !target.id && !target.className) return;
+      // Ignore PIN change & Supabase credential inputs (those have dedicated action buttons)
+      if (['currentPin', 'newPin', 'confirmNewPin', 'settingsSupabaseUrl', 'settingsSupabaseKey', 'inputImportJson'].includes(target.id)) {
+        return;
+      }
+      scheduleAutoSave();
+    };
+    paneEl.addEventListener('input', handleEdit);
+    paneEl.addEventListener('change', handleEdit);
   });
 
   // 8. Leads toolbar

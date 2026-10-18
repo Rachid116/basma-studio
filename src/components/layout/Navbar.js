@@ -15,22 +15,54 @@ export function applyTranslations() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     const customKey = `${lang}:${key}`;
-    if (storeState.inlineEdits[customKey]) {
+    if (storeState.inlineEdits && storeState.inlineEdits[customKey]) {
       el.innerHTML = sanitizeRichInlineHtml(storeState.inlineEdits[customKey]);
     } else if (dict[key]) {
       el.innerHTML = dict[key];
     }
   });
+
+  // Preserve Admin CMS Homepage & Craft & Footer edits over static English defaults
+  if (lang === 'en' && storeState.settings?.cmsContent) {
+    const cms = storeState.settings.cmsContent;
+    if (cms.hero) {
+      const heroTitle = document.querySelector('.hero-title');
+      const heroSubtitle = document.querySelector('.hero-subtitle');
+      const heroBadge = document.querySelector('.hero-section .argon-badge span:last-child');
+      if (heroTitle && cms.hero.headline) heroTitle.innerHTML = cms.hero.headline;
+      if (heroSubtitle && cms.hero.subheadline) heroSubtitle.textContent = cms.hero.subheadline;
+      if (heroBadge && cms.hero.goldBadge) heroBadge.textContent = cms.hero.goldBadge;
+    }
+    if (Array.isArray(cms.craftSteps) && cms.craftSteps.length === 3) {
+      const craftCards = document.querySelectorAll('.craft-card');
+      cms.craftSteps.forEach((step, i) => {
+        if (craftCards[i]) {
+          const h3 = craftCards[i].querySelector('h3');
+          const p = craftCards[i].querySelector('p');
+          if (h3 && step.title) h3.innerHTML = step.title;
+          if (p && step.description) p.innerHTML = step.description;
+        }
+      });
+    }
+    if (cms.brandStory) {
+      const footerAbout = document.querySelector('[data-i18n="footer_about"]');
+      if (footerAbout) footerAbout.textContent = cms.brandStory;
+    }
+  }
+
+  // Always apply any [data-cms-id] inline edits
+  if (storeState.inlineEdits) {
+    document.querySelectorAll('[data-cms-id]').forEach(el => {
+      const id = el.getAttribute('data-cms-id');
+      if (storeState.inlineEdits[id]) {
+        el.innerHTML = sanitizeRichInlineHtml(storeState.inlineEdits[id]);
+      }
+    });
+  }
 }
 
 export function applyInlineEditsToDOM() {
   applyTranslations();
-  document.querySelectorAll('[data-cms-id]').forEach(el => {
-    const id = el.getAttribute('data-cms-id');
-    if (storeState.inlineEdits[id]) {
-      el.innerHTML = sanitizeRichInlineHtml(storeState.inlineEdits[id]);
-    }
-  });
 }
 
 export function initNavbar(onStateRefresh) {

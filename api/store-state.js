@@ -9,17 +9,26 @@ const path = require('path');
 const storage = require('./_lib/storage');
 const { send, readJsonBody } = require('./_lib/http');
 
-const STATE_STORAGE_KEY = 'basma:store_state';
+const STATE_STORAGE_KEY = 'main_store';
+const LEGACY_STATE_KEY = 'basma:store_state';
 const ROOT_STATE_FILE = path.join(process.cwd(), 'store-state.json');
 const PUBLIC_STATE_FILE = path.join(process.cwd(), 'public', 'store-state.json');
 const INITIAL_DATA_FILE = path.join(process.cwd(), 'src', 'data', 'initialStoreData.json');
 
 async function loadBaselineState() {
-  // 1. Try storage adapter (KV or persistent disk)
+  // 1. Try primary storage adapter key ('main_store')
   try {
     const fromStorage = await storage.getJSON(STATE_STORAGE_KEY);
     if (fromStorage && typeof fromStorage === 'object' && Array.isArray(fromStorage.products)) {
       return fromStorage;
+    }
+  } catch (_) {}
+
+  // 1b. Try legacy key ('basma:store_state')
+  try {
+    const fromLegacy = await storage.getJSON(LEGACY_STATE_KEY);
+    if (fromLegacy && typeof fromLegacy === 'object' && Array.isArray(fromLegacy.products)) {
+      return fromLegacy;
     }
   } catch (_) {}
 
@@ -51,6 +60,9 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Basma-Admin');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.setHeader('X-Content-Type-Options', 'nosniff');
 
   if (req.method === 'OPTIONS') {

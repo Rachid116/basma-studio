@@ -181,10 +181,14 @@ export function updateCustomConfiguratorEstimate() {
   const wInput = document.getElementById('customWidthInput');
   const hInput = document.getElementById('customHeightInput');
   const engInput = document.getElementById('customEngravingInput');
+  const charLimit = Number(storeState.settings?.customizerSettings?.engravingCharLimit) || 60;
 
   if (wInput) customState.widthCm = Math.max(25, Math.min(150, parseInt(wInput.value || '60', 10)));
   if (hInput) customState.heightCm = Math.max(20, Math.min(150, parseInt(hInput.value || '45', 10)));
-  if (engInput) customState.engraving = sanitizePlainText(engInput.value || '', 60);
+  if (engInput) {
+    engInput.maxLength = charLimit;
+    customState.engraving = sanitizePlainText(engInput.value || '', charLimit);
+  }
 
   const liveEngravingPreview = document.getElementById('liveEngravingPreview');
   const liveEngravingText = document.getElementById('liveEngravingText');
@@ -214,10 +218,16 @@ export function updateCustomConfiguratorEstimate() {
 
   const areaSqCm = customState.widthCm * customState.heightCm;
   const ratePerSqCm = customState.carveStyle === 'relief' ? 0.032 : 0.021;
+  const mults = storeState.settings?.woodMultipliers || { walnut: 1.25, oak: 1.0, cedar: 1.15, carbon: 1.1 };
+  const activeMult = Number(mults[customState.woodFinish]) || 1.0;
   const woodPremium = customState.woodFinish === 'walnut' || customState.woodFinish === 'cedar' ? 18 : 8;
-  const engravingFee = customState.engraving.length > 0 ? 10 : 0;
+  const configuredEngPrice = storeState.settings?.customizerSettings?.engravingPriceUSD;
+  const engravingFee = customState.engraving.length > 0
+    ? (configuredEngPrice !== undefined ? Number(configuredEngPrice) : 10)
+    : 0;
 
-  customState.estimatedUSD = Math.round(42 + areaSqCm * ratePerSqCm + woodPremium + engravingFee);
+  const basePiece = (42 + areaSqCm * ratePerSqCm + woodPremium) * (activeMult / 1.15);
+  customState.estimatedUSD = Math.round(basePiece + engravingFee);
   const estEl = document.getElementById('customEstimatePrice');
   if (estEl) animatePriceElement(estEl, customState.estimatedUSD, storeState.currentCurrencyIndex);
 }
