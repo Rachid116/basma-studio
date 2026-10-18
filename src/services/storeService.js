@@ -35,6 +35,9 @@ function resolveEnv(name) {
   return '';
 }
 
+const DEFAULT_SUPABASE_URL = 'https://niaknvbnxxsctdxbkwfm.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pYWtudmJueHhzY3RkeGJrd2ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMzY0MTksImV4cCI6MjEwNzkxMjQxOX0.I_1Lc02T2PzVJpsEoA702xkpYEzDdJXc33k5XNHnTG0';
+
 function getActiveSupabaseConfig() {
   const envUrl = resolveEnv('VITE_SUPABASE_URL') || resolveEnv('SUPABASE_URL');
   const envKey = resolveEnv('VITE_SUPABASE_ANON_KEY') || resolveEnv('SUPABASE_ANON_KEY');
@@ -45,9 +48,12 @@ function getActiveSupabaseConfig() {
     localKey = localStorage.getItem(SUPABASE_KEY_KEY) || '';
   } catch (_) {}
 
+  const finalUrl = (envUrl || localUrl || DEFAULT_SUPABASE_URL).trim();
+  const finalKey = (envKey || localKey || DEFAULT_SUPABASE_ANON_KEY).trim();
+
   return {
-    url: (envUrl || localUrl || '').trim(),
-    key: (envKey || localKey || '').trim(),
+    url: finalUrl,
+    key: finalKey,
     isEnv: !!(envUrl && envKey)
   };
 }
