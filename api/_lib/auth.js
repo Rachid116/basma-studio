@@ -6,12 +6,13 @@
  * returned by any public endpoint, and compares in constant time.
  */
 
+const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
 const storage = require('./storage');
 const { parseCookies, clientIp, isHttps } = require('./http');
 
 const DEFAULT_PIN_SHA256 = '158a323a7ba44870f23d96f1516dd70aa48e9a72db4ebb026b0a89e212a208ab'; // sha256("2026")
-const LEGACY_PIN_SHA256 = 'a688c2c38f05246f763409b4520c0aa3ecc3ba304c92af58665f5c636120296d';
 const AUTH_KEY = 'basma:auth';
 const SESSION_COOKIE = 'basma_admin';
 const HINT_COOKIE = 'basma_admin_hint';
@@ -34,9 +35,21 @@ function safeEqual(a, b) {
 async function getAuthRecord() {
   let rec = await storage.getJSON(AUTH_KEY);
   if (!rec || !rec.salt || !rec.secret) {
+    let initialCustomHash = null;
+    try {
+      const rootStateFile = path.join(process.cwd(), 'store-state.json');
+      if (fs.existsSync(rootStateFile)) {
+        const parsed = JSON.parse(fs.readFileSync(rootStateFile, 'utf8'));
+        if (parsed?.settings?.adminPinHash && isHash(parsed.settings.adminPinHash)) {
+          initialCustomHash = parsed.settings.adminPinHash;
+        }
+      }
+    } catch (_) {}
+
+    const salt = randomHex(16);
     rec = {
-      salt: randomHex(16),
-      hash: null, // null = default PIN (or ADMIN_PIN_HASH env) still active
+      salt,
+      hash: initialCustomHash ? sha256(`${salt}:${initialCustomHash}`) : null,
       secret: randomHex(32),
       sessionVersion: 1,
       createdAt: new Date().toISOString()
@@ -58,21 +71,14 @@ function usingDefaultPin(rec) {
 
 function verifyPin(rec, clientHash) {
   if (!clientHash) return false;
-  // If client passed raw '2026'
-  if (clientHash === '2026') {
-    clientHash = DEFAULT_PIN_SHA256;
+  // If raw PIN was passed, hash with SHA-256
+  if (clientHash.length !== 64) {
+    clientHash = sha256(clientHash);
   }
   if (!isHash(clientHash)) return false;
 
   const candidate = sha256(`${rec.salt}:${clientHash}`);
-  if (safeEqual(candidate, expectedHash(rec))) return true;
-
-  if (usingDefaultPin(rec)) {
-    const trueDef = sha256(`${rec.salt}:${DEFAULT_PIN_SHA256}`);
-    const legDef = sha256(`${rec.salt}:${LEGACY_PIN_SHA256}`);
-    if (safeEqual(candidate, trueDef) || safeEqual(candidate, legDef)) return true;
-  }
-  return false;
+  return safeEqual(candidate, expectedHash(rec));
 }
 
 async function setPin(rec, newClientHash) {
@@ -81,6 +87,30 @@ async function setPin(rec, newClientHash) {
   rec.sessionVersion = (rec.sessionVersion || 1) + 1; // logs out every other device
   rec.updatedAt = new Date().toISOString();
   await storage.setJSON(AUTH_KEY, rec);
+
+  // Sync to store-state.json and public/store-state.json if filesystem is writable
+  try {
+    const rootStateFile = path.join(process.cwd(), 'store-state.json');
+    if (fs.existsSync(rootStateFile)) {
+      const stateObj = JSON.parse(fs.readFileSync(rootStateFile, 'utf8'));
+      if (stateObj && stateObj.settings) {
+        stateObj.settings.adminPinHash = newClientHash;
+        fs.writeFileSync(rootStateFile, JSON.stringify(stateObj, null, 2), 'utf8');
+      }
+    }
+  } catch (_) {}
+
+  try {
+    const pubStateFile = path.join(process.cwd(), 'public', 'store-state.json');
+    if (fs.existsSync(pubStateFile)) {
+      const pubObj = JSON.parse(fs.readFileSync(pubStateFile, 'utf8'));
+      if (pubObj && pubObj.settings) {
+        pubObj.settings.adminPinHash = newClientHash;
+        fs.writeFileSync(pubStateFile, JSON.stringify(pubObj, null, 2), 'utf8');
+      }
+    }
+  } catch (_) {}
+
   return rec;
 }
 

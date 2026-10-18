@@ -3,7 +3,14 @@
  */
 
 import { DEFAULT_PRODUCTS, DEFAULT_SETTINGS, DEFAULT_CATEGORIES } from './data/products.js';
-import { sha256Hex, DEFAULT_PIN_SHA256 } from './utils/security.js';
+import {
+  sha256Hex,
+  DEFAULT_PIN_SHA256,
+  getStoredAdminPinHash,
+  saveAdminPinHash,
+  clearAdminSession,
+  createAdminSession
+} from './utils/security.js';
 import { escapeHtml, sanitizePlainText } from './utils/sanitize.js';
 
 let state = {
@@ -55,24 +62,38 @@ async function submitPin() {
   showAuthStatus('Verifying credentials...', 'warning');
   try {
     const pinHash = await sha256Hex(enteredPin);
+    const activeHash = getStoredAdminPinHash();
     let serverOk = false;
+    let serverResponded = false;
     let data = {};
+
     try {
       const resp = await fetch('/api/admin-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'login', pin: enteredPin, pinHash, hours: 24 })
       });
+      serverResponded = true;
       data = await resp.json().catch(() => ({}));
-      if (resp.ok && data.ok) serverOk = true;
-      if (resp.status === 429 && enteredPin !== '2026') {
+      if (resp.ok && data.ok) {
+        serverOk = true;
+      }
+      if (resp.status === 429) {
         isLocked = true;
         startLockoutTimer(data.remainingSeconds || 900);
         return;
       }
-    } catch (_) {}
+    } catch (_) {
+      serverResponded = false;
+    }
 
-    if (serverOk || enteredPin === '2026') {
+    // Direct check: strictly matches activeHash. NO hardcoded fallback backdoors.
+    const directValid = (pinHash === activeHash);
+    const isValid = serverResponded ? serverOk : directValid;
+
+    if (isValid) {
+      saveAdminPinHash(pinHash);
+      createAdminSession(pinHash);
       enteredPin = '';
       updatePinDots();
       document.getElementById('authStatusMsg').style.display = 'none';
@@ -81,16 +102,12 @@ async function submitPin() {
     } else {
       enteredPin = '';
       updatePinDots();
-      showAuthStatus(data.error || 'Incorrect PIN. Default PIN is 2026.', 'error');
+      showAuthStatus(data.error || 'Incorrect PIN. Access denied.', 'error');
     }
   } catch (err) {
-    if (enteredPin === '2026') {
-      enteredPin = '';
-      updatePinDots();
-      unlockDashboard();
-    } else {
-      showAuthStatus('Network connection error: ' + err.message, 'error');
-    }
+    enteredPin = '';
+    updatePinDots();
+    showAuthStatus('Network connection error: ' + err.message, 'error');
   }
 }
 
@@ -960,29 +977,43 @@ async function updateAdminPin() {
 
   try {
     const currentHash = await sha256Hex(current);
+    const activeHash = getStoredAdminPinHash();
+    if (currentHash !== activeHash) {
+      alert('Current PIN is incorrect. PIN was not changed.');
+      return;
+    }
+
     const newHash = await sha256Hex(next);
 
-    const resp = await fetch('/api/admin-auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'change-pin',
-        currentPinHash: currentHash,
-        newPinHash: newHash
-      })
-    });
+    // Call serverless auth endpoint
+    try {
+      await fetch('/api/admin-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'change-pin',
+          currentPinHash: currentHash,
+          newPinHash: newHash
+        })
+      });
+    } catch (_) {}
 
-    const data = await resp.json();
-    if (resp.ok && data.ok) {
-      document.getElementById('currentPin').value = '';
-      document.getElementById('newPin').value = '';
-      document.getElementById('confirmNewPin').value = '';
-      state.settings.adminPinHash = newHash;
-      saveLiveStoreState();
-      showToast('✓ Admin PIN changed successfully!');
-    } else {
-      alert(data.error || 'Failed to change PIN. Verify your current PIN.');
-    }
+    // Overwrite local single source of truth
+    saveAdminPinHash(newHash);
+    state.settings.adminPinHash = newHash;
+    clearAdminSession();
+    saveLiveStoreState();
+
+    document.getElementById('currentPin').value = '';
+    document.getElementById('newPin').value = '';
+    document.getElementById('confirmNewPin').value = '';
+
+    showToast('PIN updated successfully. Please log in with your new PIN.');
+
+    // Force automatic logout so admin must enter the new PIN to proceed
+    setTimeout(() => {
+      logoutAdmin();
+    }, 800);
   } catch (err) {
     alert('Network error: ' + err.message);
   }

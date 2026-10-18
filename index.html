@@ -1350,8 +1350,19 @@
           </div>
 
           <div class="argon-input-group">
-            <label for="adminNewPin">Change Admin Unlock PIN (Hashed via SHA-256)</label>
-            <input type="password" id="adminNewPin" class="argon-input" value="" placeholder="Leave blank to keep current PIN" maxlength="16" autocomplete="new-password" />
+            <label for="adminCurrentPin">Current Studio PIN (Required to change PIN)</label>
+            <input type="password" id="adminCurrentPin" class="argon-input" value="" placeholder="Enter current PIN" maxlength="16" autocomplete="current-password" />
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.65rem;">
+            <div class="argon-input-group">
+              <label for="adminNewPin">New Studio PIN</label>
+              <input type="password" id="adminNewPin" class="argon-input" value="" placeholder="New PIN (min 4 digits)" maxlength="16" autocomplete="new-password" />
+            </div>
+            <div class="argon-input-group">
+              <label for="adminConfirmNewPin">Confirm New PIN</label>
+              <input type="password" id="adminConfirmNewPin" class="argon-input" value="" placeholder="Confirm new PIN" maxlength="16" autocomplete="new-password" />
+            </div>
           </div>
 
           <button type="button" class="btn-argon btn-primary-walnut" id="adminSaveSettingsBtn" style="width:100%;">

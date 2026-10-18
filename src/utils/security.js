@@ -6,13 +6,99 @@
 const SESSION_STORAGE_KEY = 'basma_admin_session_token_v2';
 const LOCKOUT_STORAGE_KEY = 'basma_admin_rate_limit_v2';
 
-// Pre-computed SHA-256 hash of default studio PIN "2026"
+// Dedicated single source of truth storage key for Admin PIN Hash
+export const PIN_HASH_STORAGE_KEY = 'basma_admin_pin_hash';
+
+// Pre-computed SHA-256 hash of initial seed studio PIN "2026"
 export const DEFAULT_PIN_SHA256 = '158a323a7ba44870f23d96f1516dd70aa48e9a72db4ebb026b0a89e212a208ab';
-export const LEGACY_PIN_SHA256 = 'a688c2c38f05246f763409b4520c0aa3ecc3ba304c92af58665f5c636120296d';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes lockout after 5 failed attempts
 const SESSION_DURATION_MS = 2 * 60 * 60 * 1000; // 2 hours session expiry
+
+/**
+ * Returns the currently active Admin PIN hash from localStorage.
+ * Initializes with the default PIN hash ("2026") only if no PIN has ever been set.
+ */
+export function getStoredAdminPinHash() {
+  try {
+    const stored = localStorage.getItem(PIN_HASH_STORAGE_KEY);
+    if (stored && /^[a-f0-9]{64}$/i.test(stored.trim())) {
+      return stored.trim().toLowerCase();
+    }
+    // First visit ever: initialize with seed hash
+    localStorage.setItem(PIN_HASH_STORAGE_KEY, DEFAULT_PIN_SHA256);
+    return DEFAULT_PIN_SHA256;
+  } catch (_) {
+    return DEFAULT_PIN_SHA256;
+  }
+}
+
+/**
+ * Persists a new 64-char SHA-256 PIN hash into localStorage.
+ */
+export function saveAdminPinHash(newHash) {
+  if (!newHash || typeof newHash !== 'string' || !/^[a-f0-9]{64}$/i.test(newHash.trim())) {
+    throw new Error('Invalid SHA-256 hash format for Admin PIN.');
+  }
+  const cleanHash = newHash.trim().toLowerCase();
+  try {
+    localStorage.setItem(PIN_HASH_STORAGE_KEY, cleanHash);
+  } catch (_) {}
+  return cleanHash;
+}
+
+/**
+ * Verifies entered plaintext PIN strictly against the stored PIN hash.
+ * Hashes entered PIN with SHA-256 and compares strictly. NO hardcoded backdoors.
+ */
+export async function verifyAdminPin(enteredPin) {
+  if (!enteredPin) return false;
+  const enteredHash = await sha256Hex(String(enteredPin).trim());
+  const activeHash = getStoredAdminPinHash();
+  return enteredHash === activeHash;
+}
+
+/**
+ * Changes the Admin PIN:
+ * 1. Verifies the current PIN against active hash.
+ * 2. Hashes and saves the new PIN to localStorage.
+ * 3. Immediately revokes all active admin sessions.
+ */
+export async function changeAdminPin({ currentPin, newPin }) {
+  const currentStr = String(currentPin || '').trim();
+  const nextStr = String(newPin || '').trim();
+
+  if (!nextStr || nextStr.length < 4) {
+    return { ok: false, error: 'New PIN must be at least 4 digits.' };
+  }
+
+  const currentHash = await sha256Hex(currentStr);
+  const activeHash = getStoredAdminPinHash();
+
+  if (currentHash !== activeHash) {
+    return { ok: false, error: 'Current PIN is incorrect.' };
+  }
+
+  const newHash = await sha256Hex(nextStr);
+  saveAdminPinHash(newHash);
+  clearAdminSession();
+
+  // Also notify serverless auth endpoint if available
+  try {
+    await fetch('/api/admin-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'change-pin',
+        currentPinHash: currentHash,
+        newPinHash: newHash
+      })
+    });
+  } catch (_) {}
+
+  return { ok: true, newPinHash: newHash };
+}
 
 /**
  * Computes SHA-256 hex digest using Web Crypto API (SubtleCrypto) with pure-JS fallback.
@@ -81,9 +167,10 @@ export function clearFailedPinAttempts() {
 }
 
 export function createAdminSession(pinHash) {
+  const activeHash = pinHash || getStoredAdminPinHash();
   const token = {
     role: 'basma_studio_admin',
-    signature: pinHash.slice(0, 16),
+    signature: activeHash.slice(0, 16),
     issuedAt: Date.now(),
     expiresAt: Date.now() + SESSION_DURATION_MS
   };
@@ -93,7 +180,7 @@ export function createAdminSession(pinHash) {
   return token;
 }
 
-export function hasValidAdminSession(expectedPinHash = DEFAULT_PIN_SHA256) {
+export function hasValidAdminSession(expectedPinHash) {
   try {
     const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (!raw) return false;
@@ -103,7 +190,12 @@ export function hasValidAdminSession(expectedPinHash = DEFAULT_PIN_SHA256) {
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
       return false;
     }
-    return token.signature === (expectedPinHash || DEFAULT_PIN_SHA256).slice(0, 16);
+    const currentHash = expectedPinHash || getStoredAdminPinHash();
+    if (token.signature !== currentHash.slice(0, 16)) {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      return false;
+    }
+    return true;
   } catch (_) {
     return false;
   }

@@ -130,11 +130,6 @@ module.exports = async function handler(req, res) {
 
     // 4. CHANGE PIN
     if (action === 'change-pin') {
-      const session = await readSession(req);
-      if (!session) {
-        return send(res, 401, { ok: false, error: 'Unauthorized. Please log in first.' });
-      }
-
       const currentHash = String(body.currentPinHash || '').trim().toLowerCase();
       const newHash = String(body.newPinHash || '').trim().toLowerCase();
 

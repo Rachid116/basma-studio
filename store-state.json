@@ -2,10 +2,22 @@
   "version": "2026.3.0",
   "updatedAt": "2026-10-18T12:00:00Z",
   "categories": [
-    { "id": "all", "label": "All Collections" },
-    { "id": "garage", "label": "The Garage (Car Silhouettes)" },
-    { "id": "relief", "label": "3D Relief & Heritage" },
-    { "id": "anime", "label": "Anime & Gaming Lounge" }
+    {
+      "id": "all",
+      "label": "All Collections"
+    },
+    {
+      "id": "garage",
+      "label": "The Garage (Car Silhouettes)"
+    },
+    {
+      "id": "relief",
+      "label": "3D Relief & Heritage"
+    },
+    {
+      "id": "anime",
+      "label": "Anime & Gaming Lounge"
+    }
   ],
   "settings": {
     "whatsappNumber": "96170360671",
@@ -22,7 +34,7 @@
     "calcMinCm": 30,
     "calcMaxCm": 150,
     "woodMultipliers": {
-      "oak": 1.0,
+      "oak": 1,
       "walnut": 1.25,
       "carbon": 1.1,
       "cedar": 1.15
@@ -81,19 +93,59 @@
     },
     "wallVibeSettings": {
       "backgrounds": [
-        { "id": "living", "label": "Sunlit Living Room", "url": "assets/wall-livingroom.jpg", "dark": false },
-        { "id": "garage", "label": "Executive Garage", "url": "assets/wall-garage.jpg", "dark": true },
-        { "id": "lounge", "label": "Minimal Studio", "url": "assets/wall-studio.jpg", "dark": false },
-        { "id": "concrete", "label": "Industrial Concrete", "url": "assets/wall-concrete.jpg", "dark": true }
+        {
+          "id": "living",
+          "label": "Sunlit Living Room",
+          "url": "assets/wall-livingroom.jpg",
+          "dark": false
+        },
+        {
+          "id": "garage",
+          "label": "Executive Garage",
+          "url": "assets/wall-garage.jpg",
+          "dark": true
+        },
+        {
+          "id": "lounge",
+          "label": "Minimal Studio",
+          "url": "assets/wall-studio.jpg",
+          "dark": false
+        },
+        {
+          "id": "concrete",
+          "label": "Industrial Concrete",
+          "url": "assets/wall-concrete.jpg",
+          "dark": true
+        }
       ],
-      "defaultPieces": ["prod-aero-gt", "prod-sacred-relief", "prod-porsche-gt3"]
+      "defaultPieces": [
+        "prod-aero-gt",
+        "prod-sacred-relief",
+        "prod-porsche-gt3"
+      ]
     },
     "customizerSettings": {
       "woodFinishes": [
-        { "id": "carbon", "name": "Matte Carbon Black", "priceFactor": 1.0 },
-        { "id": "walnut", "name": "Natural Solid Walnut", "priceFactor": 1.25 },
-        { "id": "oak", "name": "White European Oak", "priceFactor": 1.15 },
-        { "id": "cedar", "name": "Aged Cedar Tone", "priceFactor": 1.2 }
+        {
+          "id": "carbon",
+          "name": "Matte Carbon Black",
+          "priceFactor": 1
+        },
+        {
+          "id": "walnut",
+          "name": "Natural Solid Walnut",
+          "priceFactor": 1.25
+        },
+        {
+          "id": "oak",
+          "name": "White European Oak",
+          "priceFactor": 1.15
+        },
+        {
+          "id": "cedar",
+          "name": "Aged Cedar Tone",
+          "priceFactor": 1.2
+        }
       ],
       "engravingCharLimit": 60,
       "engravingPriceUSD": 10
@@ -119,9 +171,21 @@
       "finish": "Matte Carbon Black (15mm Layered Wood)",
       "description": "Our signature @basma.llb aerodynamic hypercar cutout featured on sunlit plaster walls. Precision laser/CNC routed from high-density matte carbon-finished hardwood with floating wall standoffs.",
       "sizes": [
-        { "label": "Small — 50 × 28 cm", "code": "S (50cm)", "priceUSD": 58 },
-        { "label": "Medium — 80 × 45 cm", "code": "M (80cm)", "priceUSD": 94 },
-        { "label": "Large — 115 × 64 cm", "code": "L (115cm)", "priceUSD": 138 }
+        {
+          "label": "Small — 50 × 28 cm",
+          "code": "S (50cm)",
+          "priceUSD": 58
+        },
+        {
+          "label": "Medium — 80 × 45 cm",
+          "code": "M (80cm)",
+          "priceUSD": 94
+        },
+        {
+          "label": "Large — 115 × 64 cm",
+          "code": "L (115cm)",
+          "priceUSD": 138
+        }
       ],
       "defaultSizeIndex": 1
     },
@@ -135,9 +199,21 @@
       "finish": "Solid Natural Walnut • Hand-Oiled",
       "description": "As seen in our @basma.llb 3D Wood Design showcase: a deeply carved solid walnut medallion featuring micro-fluted radiant halo detailing and hand-rubbed beeswax oil finish.",
       "sizes": [
-        { "label": "Small — 30 × 30 cm (28mm thick)", "code": "S (30cm)", "priceUSD": 75 },
-        { "label": "Medium — 45 × 45 cm (32mm thick)", "code": "M (45cm)", "priceUSD": 118 },
-        { "label": "Large — 65 × 65 cm (38mm thick)", "code": "L (65cm)", "priceUSD": 175 }
+        {
+          "label": "Small — 30 × 30 cm (28mm thick)",
+          "code": "S (30cm)",
+          "priceUSD": 75
+        },
+        {
+          "label": "Medium — 45 × 45 cm (32mm thick)",
+          "code": "M (45cm)",
+          "priceUSD": 118
+        },
+        {
+          "label": "Large — 65 × 65 cm (38mm thick)",
+          "code": "L (65cm)",
+          "priceUSD": 175
+        }
       ],
       "defaultSizeIndex": 1
     },
@@ -151,9 +227,21 @@
       "finish": "Matte Carbon Black + Gold Brake Caliper Accent",
       "description": "Iconic swan-neck rear wing and timeless Stuttgart roofline captured in a multi-layered matte-black wood wall silhouette with warm gold hub accents.",
       "sizes": [
-        { "label": "Small — 45 × 22 cm", "code": "S (45cm)", "priceUSD": 54 },
-        { "label": "Medium — 75 × 36 cm", "code": "M (75cm)", "priceUSD": 89 },
-        { "label": "Large — 110 × 52 cm", "code": "L (110cm)", "priceUSD": 129 }
+        {
+          "label": "Small — 45 × 22 cm",
+          "code": "S (45cm)",
+          "priceUSD": 54
+        },
+        {
+          "label": "Medium — 75 × 36 cm",
+          "code": "M (75cm)",
+          "priceUSD": 89
+        },
+        {
+          "label": "Large — 110 × 52 cm",
+          "code": "L (110cm)",
+          "priceUSD": 129
+        }
       ],
       "defaultSizeIndex": 1
     },
@@ -167,9 +255,21 @@
       "finish": "Aged Lebanese Cedar & Rich Walnut",
       "description": "Multi-tiered 3D botanical relief of the timeless Cedar emblem, carved with 22mm depth into solid hardwood and framed in a chamfered heritage border.",
       "sizes": [
-        { "label": "Small — 35 × 35 cm", "code": "S (35cm)", "priceUSD": 72 },
-        { "label": "Medium — 55 × 55 cm", "code": "M (55cm)", "priceUSD": 115 },
-        { "label": "Large — 80 × 80 cm", "code": "L (80cm)", "priceUSD": 168 }
+        {
+          "label": "Small — 35 × 35 cm",
+          "code": "S (35cm)",
+          "priceUSD": 72
+        },
+        {
+          "label": "Medium — 55 × 55 cm",
+          "code": "M (55cm)",
+          "priceUSD": 115
+        },
+        {
+          "label": "Large — 80 × 80 cm",
+          "code": "L (80cm)",
+          "priceUSD": 168
+        }
       ],
       "defaultSizeIndex": 1
     },
@@ -183,9 +283,21 @@
       "finish": "Dual-Layer Matte Black & Gold Leaf Inlay",
       "description": "High-contrast anime & gaming sanctuary centerpiece combining a crescent moon ring, twin katanas, and a fierce geometric wolf mask with golden eye inlays.",
       "sizes": [
-        { "label": "Small — 40 × 40 cm", "code": "S (40cm)", "priceUSD": 56 },
-        { "label": "Medium — 70 × 70 cm", "code": "M (70cm)", "priceUSD": 92 },
-        { "label": "Large — 100 × 100 cm", "code": "L (100cm)", "priceUSD": 135 }
+        {
+          "label": "Small — 40 × 40 cm",
+          "code": "S (40cm)",
+          "priceUSD": 56
+        },
+        {
+          "label": "Medium — 70 × 70 cm",
+          "code": "M (70cm)",
+          "priceUSD": 92
+        },
+        {
+          "label": "Large — 100 × 100 cm",
+          "code": "L (100cm)",
+          "priceUSD": 135
+        }
       ],
       "defaultSizeIndex": 1
     },
@@ -199,9 +311,21 @@
       "finish": "Matte Carbon Black (15mm Baltic Birch Core)",
       "description": "Rugged luxury 4×4 silhouette framed against twin geometric mountain peaks. Built for overland enthusiasts and modern executive garages.",
       "sizes": [
-        { "label": "Small — 45 × 32 cm", "code": "S (45cm)", "priceUSD": 59 },
-        { "label": "Medium — 75 × 52 cm", "code": "M (75cm)", "priceUSD": 95 },
-        { "label": "Large — 105 × 72 cm", "code": "L (105cm)", "priceUSD": 139 }
+        {
+          "label": "Small — 45 × 32 cm",
+          "code": "S (45cm)",
+          "priceUSD": 59
+        },
+        {
+          "label": "Medium — 75 × 52 cm",
+          "code": "M (75cm)",
+          "priceUSD": 95
+        },
+        {
+          "label": "Large — 105 × 72 cm",
+          "code": "L (105cm)",
+          "priceUSD": 139
+        }
       ],
       "defaultSizeIndex": 1
     },
@@ -215,9 +339,21 @@
       "finish": "Warm Brushed Gold & Matte Obsidian Base",
       "description": "Inspired by the official Basma emblem: intricate concentric CNC topographic grooves carved inside raised Arabic typography on a circular obsidian-black wood disc.",
       "sizes": [
-        { "label": "Small — 40 cm Diameter", "code": "S (40cm)", "priceUSD": 68 },
-        { "label": "Medium — 65 cm Diameter", "code": "M (65cm)", "priceUSD": 108 },
-        { "label": "Large — 95 cm Diameter", "code": "L (95cm)", "priceUSD": 158 }
+        {
+          "label": "Small — 40 cm Diameter",
+          "code": "S (40cm)",
+          "priceUSD": 68
+        },
+        {
+          "label": "Medium — 65 cm Diameter",
+          "code": "M (65cm)",
+          "priceUSD": 108
+        },
+        {
+          "label": "Large — 95 cm Diameter",
+          "code": "L (95cm)",
+          "priceUSD": 158
+        }
       ],
       "defaultSizeIndex": 1
     },
@@ -231,9 +367,21 @@
       "finish": "Matte Carbon Black + Warm Gold Accents",
       "description": "Geometric hexagonal crest engineered for streaming studios and gaming setups. Features layered depth spacers for optional warm LED backlighting.",
       "sizes": [
-        { "label": "Small — 40 × 46 cm", "code": "S (40cm)", "priceUSD": 52 },
-        { "label": "Medium — 65 × 75 cm", "code": "M (65cm)", "priceUSD": 86 },
-        { "label": "Large — 95 × 108 cm", "code": "L (95cm)", "priceUSD": 128 }
+        {
+          "label": "Small — 40 × 46 cm",
+          "code": "S (40cm)",
+          "priceUSD": 52
+        },
+        {
+          "label": "Medium — 65 × 75 cm",
+          "code": "M (65cm)",
+          "priceUSD": 86
+        },
+        {
+          "label": "Large — 95 × 108 cm",
+          "code": "L (95cm)",
+          "priceUSD": 128
+        }
       ],
       "defaultSizeIndex": 1
     },
@@ -247,9 +395,21 @@
       "finish": "Matte Carbon Track + Walnut Sector Apexes",
       "description": "3D cambered motorsport track sculpture with gold-inlaid racing line and engraved corner names. Available for Monaco, Spa-Francorchamps, Monza, or Nürburgring.",
       "sizes": [
-        { "label": "Small — 45 × 35 cm", "code": "S (45cm)", "priceUSD": 55 },
-        { "label": "Medium — 75 × 58 cm", "code": "M (75cm)", "priceUSD": 88 },
-        { "label": "Large — 105 × 80 cm", "code": "L (105cm)", "priceUSD": 132 }
+        {
+          "label": "Small — 45 × 35 cm",
+          "code": "S (45cm)",
+          "priceUSD": 55
+        },
+        {
+          "label": "Medium — 75 × 58 cm",
+          "code": "M (75cm)",
+          "priceUSD": 88
+        },
+        {
+          "label": "Large — 105 × 80 cm",
+          "code": "L (105cm)",
+          "priceUSD": 132
+        }
       ],
       "defaultSizeIndex": 1
     }

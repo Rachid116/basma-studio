@@ -7,6 +7,7 @@ import { storeState } from '../../services/storeService.js';
 import {
   sha256Hex,
   DEFAULT_PIN_SHA256,
+  getStoredAdminPinHash,
   getRateLimitStatus,
   recordFailedPinAttempt,
   clearFailedPinAttempts,
@@ -77,7 +78,7 @@ export function initAdminModal() {
   const submitPinBtn = document.getElementById('submitAdminPinBtn');
 
   // Restore active admin session if valid
-  const expectedHash = storeState.settings.adminPinHash || DEFAULT_PIN_SHA256;
+  const expectedHash = getStoredAdminPinHash();
   if (hasValidAdminSession(expectedHash)) {
     unlockAdminMode();
   }
@@ -117,29 +118,41 @@ export function initAdminModal() {
     if (!entered) return;
 
     const enteredHash = await sha256Hex(entered);
-    const activeHash = storeState.settings.adminPinHash || DEFAULT_PIN_SHA256;
+    const activeHash = getStoredAdminPinHash();
 
-    // Direct client check: matches default 2026, activeHash, or known hashes
-    const directValid = entered === '2026' ||
-                        enteredHash === activeHash ||
-                        enteredHash === DEFAULT_PIN_SHA256 ||
-                        enteredHash === 'a688c2c38f05246f763409b4520c0aa3ecc3ba304c92af58665f5c636120296d';
-
-    // Also verify against /api/admin-auth if serverless endpoint is reachable
+    // Verify against /api/admin-auth if serverless endpoint is reachable
     let serverVerified = false;
+    let serverResponded = false;
+    let serverError = '';
     try {
       const resp = await fetch('/api/admin-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'login', pin: entered, pinHash: enteredHash })
       });
-      if (resp.ok) {
-        const resJson = await resp.json();
-        serverVerified = !!resJson.authenticated;
+      serverResponded = true;
+      if (resp.status === 429) {
+        const resJson = await resp.json().catch(() => ({}));
+        pinError.textContent = `🔒 ${resJson.error || 'Too many attempts.'}`;
+        pinError.style.display = 'block';
+        return;
       }
-    } catch (_) {}
+      if (resp.ok) {
+        const resJson = await resp.json().catch(() => ({}));
+        serverVerified = !!resJson.authenticated;
+      } else {
+        const resJson = await resp.json().catch(() => ({}));
+        serverError = resJson.error || '';
+      }
+    } catch (_) {
+      serverResponded = false;
+    }
 
-    if (directValid || serverVerified) {
+    // Direct check: strictly matches activeHash. NO hardcoded fallback backdoors.
+    const directValid = (enteredHash === activeHash);
+    const isValid = serverResponded ? serverVerified : directValid;
+
+    if (isValid) {
       clearFailedPinAttempts();
       createAdminSession(activeHash);
       pinModal.classList.remove('open');
@@ -149,7 +162,7 @@ export function initAdminModal() {
       if (failRecord.locked) {
         pinError.textContent = `🔒 5 failed attempts. Admin login locked for 5 minutes.`;
       } else {
-        pinError.textContent = `Incorrect PIN (${failRecord.remainingAttempts} attempts remaining before lockout).`;
+        pinError.textContent = serverError || `Incorrect PIN (${failRecord.remainingAttempts} attempts remaining before lockout).`;
       }
       pinError.style.display = 'block';
       pinInput.select();

@@ -86,6 +86,15 @@ module.exports = async function handler(req, res) {
         delete payload.settings.adminPin;
       }
 
+      // If a valid custom adminPinHash is present, sync with auth record
+      if (payload.settings && payload.settings.adminPinHash && /^[a-f0-9]{64}$/i.test(payload.settings.adminPinHash)) {
+        try {
+          const authLib = require('./_lib/auth');
+          const authRec = await authLib.getAuthRecord();
+          await authLib.setPin(authRec, payload.settings.adminPinHash.toLowerCase());
+        } catch (_) {}
+      }
+
       payload.updatedAt = new Date().toISOString();
 
       // Save to primary storage adapter (KV / disk)

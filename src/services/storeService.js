@@ -5,7 +5,7 @@
  */
 
 import { DEFAULT_PRODUCTS, DEFAULT_SETTINGS, DEFAULT_CATEGORIES } from '../data/products.js';
-import { DEFAULT_PIN_SHA256, sha256Hex } from '../utils/security.js';
+import { DEFAULT_PIN_SHA256, sha256Hex, getStoredAdminPinHash, saveAdminPinHash } from '../utils/security.js';
 import { CURRENCIES } from '../utils/priceFormatter.js';
 import { escapeHtml } from '../utils/sanitize.js';
 
@@ -48,12 +48,10 @@ export function notifyStoreListeners() {
 }
 
 export function getStoreSnapshot() {
-  // Never serialize plaintext adminPin into snapshots; only store SHA-256 hash
+  // Never serialize plaintext adminPin into snapshots; always use active SHA-256 hash
   const safeSettings = { ...storeState.settings };
   delete safeSettings.adminPin;
-  if (!safeSettings.adminPinHash) {
-    safeSettings.adminPinHash = DEFAULT_PIN_SHA256;
-  }
+  safeSettings.adminPinHash = getStoredAdminPinHash();
   return {
     version: '2026.3.0',
     updatedAt: new Date().toISOString(),
@@ -68,9 +66,11 @@ export async function applyStoreSnapshot(snapshot) {
   if (!snapshot || typeof snapshot !== 'object') return;
   if (snapshot.settings && typeof snapshot.settings === 'object') {
     const merged = { ...DEFAULT_SETTINGS, ...snapshot.settings };
-    // Migrate legacy plaintext adminPin if present into SHA-256 hash
-    if (merged.adminPin && !snapshot.settings.adminPinHash) {
-      merged.adminPinHash = await sha256Hex(String(merged.adminPin));
+    if (snapshot.settings.adminPinHash && /^[a-f0-9]{64}$/i.test(snapshot.settings.adminPinHash)) {
+      saveAdminPinHash(snapshot.settings.adminPinHash);
+      merged.adminPinHash = snapshot.settings.adminPinHash;
+    } else {
+      merged.adminPinHash = getStoredAdminPinHash();
     }
     delete merged.adminPin;
     storeState.settings = merged;

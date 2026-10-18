@@ -10,7 +10,14 @@ import {
   resetStoreToFactoryDefaults
 } from '../../services/storeService.js';
 import { escapeHtml, sanitizePlainText, sanitizePhoneDigits, validateImageUpload } from '../../utils/sanitize.js';
-import { sha256Hex, DEFAULT_PIN_SHA256 } from '../../utils/security.js';
+import {
+  sha256Hex,
+  DEFAULT_PIN_SHA256,
+  getStoredAdminPinHash,
+  saveAdminPinHash,
+  changeAdminPin,
+  clearAdminSession
+} from '../../utils/security.js';
 import { renderCatalog, getCurrentCatalogFilter } from '../sections/Catalog.js';
 import { updateSizeCalculator } from '../sections/SizeCalculator.js';
 import { injectStructuredDataSchema } from '../../services/seoSchemaService.js';
@@ -331,11 +338,53 @@ export function initProductManager() {
       storeState.settings.calcReliefPerCm = parseFloat(document.getElementById('adminCalcReliefPerCm').value || '1.45');
       storeState.settings.cloudWebhookUrl = sanitizePlainText(document.getElementById('adminCloudWebhookUrl').value, 240);
 
-      const newPinRaw = (document.getElementById('adminNewPin').value || '').trim();
-      if (newPinRaw.length >= 4) {
-        storeState.settings.adminPinHash = await sha256Hex(newPinRaw);
-      } else if (!storeState.settings.adminPinHash) {
-        storeState.settings.adminPinHash = DEFAULT_PIN_SHA256;
+      const currentPinRaw = (document.getElementById('adminCurrentPin')?.value || '').trim();
+      const newPinRaw = (document.getElementById('adminNewPin')?.value || '').trim();
+      const confirmPinRaw = (document.getElementById('adminConfirmNewPin')?.value || '').trim();
+
+      let pinWasChanged = false;
+
+      if (newPinRaw) {
+        if (!currentPinRaw) {
+          showToast('❌ Current PIN is required to set a new PIN.', { error: true });
+          return;
+        }
+        if (newPinRaw.length < 4) {
+          showToast('❌ New PIN must be at least 4 digits.', { error: true });
+          return;
+        }
+        if (newPinRaw !== confirmPinRaw) {
+          showToast('❌ New PIN and confirmation do not match.', { error: true });
+          return;
+        }
+
+        const currentHash = await sha256Hex(currentPinRaw);
+        const activeHash = getStoredAdminPinHash();
+        if (currentHash !== activeHash) {
+          showToast('❌ Current PIN is incorrect. PIN was not changed.', { error: true });
+          return;
+        }
+
+        const newHash = await sha256Hex(newPinRaw);
+        saveAdminPinHash(newHash);
+        storeState.settings.adminPinHash = newHash;
+        clearAdminSession();
+        pinWasChanged = true;
+
+        // Sync with /api/admin-auth
+        try {
+          fetch('/api/admin-auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'change-pin',
+              currentPinHash: currentHash,
+              newPinHash: newHash
+            })
+          }).catch(() => {});
+        } catch (_) {}
+      } else {
+        storeState.settings.adminPinHash = getStoredAdminPinHash();
       }
 
       await applyStoreSnapshot(getStoreSnapshot());
@@ -343,9 +392,20 @@ export function initProductManager() {
       renderCatalog(getCurrentCatalogFilter());
       injectStructuredDataSchema(storeState.products, storeState.settings);
       await savePersistentStoreState();
-      showToast('Global store & calculator settings saved!', {
-        subMeta: `WhatsApp: +${storeState.settings.whatsappNumber}`
-      });
+
+      if (pinWasChanged) {
+        if (document.getElementById('adminCurrentPin')) document.getElementById('adminCurrentPin').value = '';
+        if (document.getElementById('adminNewPin')) document.getElementById('adminNewPin').value = '';
+        if (document.getElementById('adminConfirmNewPin')) document.getElementById('adminConfirmNewPin').value = '';
+
+        showToast('PIN updated successfully. Please log in with your new PIN.');
+        // Invalidate active admin session and force re-login
+        document.getElementById('exitAdminModeBtn')?.click();
+      } else {
+        showToast('Global store & calculator settings saved!', {
+          subMeta: `WhatsApp: +${storeState.settings.whatsappNumber}`
+        });
+      }
     });
   }
 
