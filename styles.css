@@ -65,6 +65,9 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  max-width: 100vw;
+  overflow-x: hidden !important;
+  position: relative;
 }
 
 body {
@@ -72,7 +75,8 @@ body {
   background-color: var(--bg-sand);
   color: var(--text-primary);
   line-height: 1.6;
-  overflow-x: hidden;
+  max-width: 100vw;
+  overflow-x: hidden !important;
   -webkit-font-smoothing: antialiased;
   position: relative;
 }
@@ -2871,24 +2875,6 @@ body[dir="rtl"] .mobile-nav-drawer.open {
   border: 1px solid rgba(39, 174, 96, 0.35);
 }
 
-/* Mobile Small Viewport Safeguards (320px - 430px) */
-@media (max-width: 480px) {
-  .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-  .hero-title {
-    font-size: clamp(1.75rem, 7vw, 2.3rem);
-  }
-  .argon-nav-pills {
-    max-width: 100%;
-    overflow-x: auto;
-  }
-  .carve-compare-stage {
-    min-height: 240px;
-  }
-}
-
 /* Site-Wide Dynamic Promo & Announcement Top Bar */
 .site-announcement-bar {
   background: linear-gradient(90deg, #181512 0%, #2b1f14 50%, #181512 100%);
@@ -2943,6 +2929,619 @@ body[dir="rtl"] .mobile-nav-drawer.open {
 .site-announcement-bar .announcement-link:hover {
   color: #f5e4a8;
 }
+
+/* ==========================================================================
+   9. COMPLETE MOBILE-FIRST RESPONSIVE LAYOUT OVERHAUL (320px – 430px)
+   ========================================================================== */
+
+/* Global flex/grid child overflow protection & responsive media */
+.hero-grid > *,
+.vibe-studio-grid > *,
+.calculator-card > *,
+.products-grid > *,
+.configurator-grid > *,
+.craft-grid > *,
+.footer-grid > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+#customCarveCanvas {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
+.scaled-art-box {
+  max-width: 84% !important;
+}
+
+@media (max-width: 768px) {
+  /* Hide redundant currency/language pills in top bar on mobile (available in mobile drawer) */
+  .nav-controls #currencyToggleBtn,
+  .nav-controls #langToggleBtn {
+    display: none !important;
+  }
+
+  .navbar-inner {
+    height: 66px;
+    gap: 0.5rem;
+  }
+
+  .brand-logo {
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  .brand-emblem {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+
+  .brand-title {
+    font-size: 1.15rem;
+  }
+
+  .brand-tagline {
+    font-size: 0.62rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 155px;
+  }
+
+  .mobile-menu-btn,
+  .cart-trigger-btn {
+    min-height: 44px;
+  }
+
+  .cart-trigger-btn {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8rem;
+  }
+
+  /* Section vertical rhythm on mobile */
+  .hero-section {
+    padding: 1.5rem 0 2.75rem;
+  }
+
+  .vibe-studio-section,
+  .calculator-section,
+  .catalog-section,
+  .custom-studio-section,
+  .craft-section {
+    padding: 3.25rem 0;
+  }
+
+  .section-header {
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-size: clamp(1.6rem, 6.2vw, 2.2rem);
+    line-height: 1.2;
+  }
+
+  .section-subtitle {
+    font-size: 0.92rem;
+  }
+
+  /* Quick-View modal responsive stacking */
+  .quickview-modal {
+    width: 94vw;
+    max-height: 88vh;
+    border-radius: var(--radius-lg);
+  }
+
+  .quickview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quickview-media {
+    min-height: 220px;
+    max-height: 260px;
+  }
+
+  .quickview-details {
+    padding: 1.25rem;
+    gap: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-left: 0.95rem;
+    padding-right: 0.95rem;
+  }
+
+  /* 1. Top Announcement Bar */
+  .site-announcement-bar {
+    padding: 0.42rem 0.65rem;
+    font-size: 0.74rem;
+  }
+
+  .site-announcement-bar .announcement-inner {
+    gap: 0.4rem;
+  }
+
+  .site-announcement-bar .announcement-badge {
+    font-size: 0.62rem;
+    padding: 0.14rem 0.48rem;
+  }
+
+  /* 2. Mobile Navbar (320px - 430px) */
+  .navbar-inner {
+    height: 62px;
+  }
+
+  .brand-emblem {
+    width: 36px;
+    height: 36px;
+  }
+
+  .brand-title {
+    font-size: 1.05rem;
+  }
+
+  .brand-tagline {
+    font-size: 0.58rem;
+    max-width: 125px;
+  }
+
+  .nav-controls {
+    gap: 0.4rem;
+  }
+
+  .cart-trigger-btn {
+    padding: 0.4rem 0.7rem;
+    gap: 0.35rem;
+    font-size: 0.76rem;
+  }
+
+  .mobile-menu-btn {
+    width: 44px;
+    height: 44px;
+    padding: 0.45rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 3. Hero Section & Dual Showcase */
+  .hero-grid {
+    gap: 1.65rem;
+  }
+
+  .hero-badge-pill {
+    font-size: 0.68rem;
+    padding: 0.35rem 0.75rem;
+    margin-bottom: 0.95rem;
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  .hero-title {
+    font-size: clamp(1.7rem, 7.5vw, 2.2rem);
+    line-height: 1.15;
+    margin-bottom: 0.85rem;
+    word-break: break-word;
+  }
+
+  .hero-lead {
+    font-size: 0.92rem;
+    margin-bottom: 1.35rem;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    margin-bottom: 1.5rem;
+    width: 100%;
+  }
+
+  .hero-cta-group .btn-argon {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.82rem 1rem;
+    font-size: 0.88rem;
+  }
+
+  .hero-trust-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+    padding-top: 1.15rem;
+  }
+
+  .trust-badge-item {
+    padding: 0.5rem 0.6rem;
+    gap: 0.45rem;
+    min-width: 0;
+  }
+
+  .trust-badge-text strong {
+    font-size: 0.74rem;
+  }
+
+  .trust-badge-text span {
+    font-size: 0.66rem;
+  }
+
+  /* Hero Showcase Card & Stacked Mode Tabs */
+  .hero-showcase-card {
+    padding: 0.85rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .showcase-top-bar {
+    margin-bottom: 0.75rem;
+  }
+
+  .argon-pill-toggle {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    border-radius: var(--radius-md);
+    padding: 0.3rem;
+    gap: 0.25rem;
+  }
+
+  .argon-pill-btn {
+    width: 100%;
+    text-align: center;
+    padding: 0.52rem 0.75rem;
+    font-size: 0.76rem;
+    border-radius: var(--radius-sm);
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .showcase-stage {
+    aspect-ratio: 4 / 3.5;
+    min-height: 235px;
+  }
+
+  .showcase-glass-caption {
+    bottom: 0.6rem;
+    left: 0.6rem;
+    right: 0.6rem;
+    padding: 0.7rem 0.85rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.45rem;
+  }
+
+  .caption-info h3 {
+    font-size: 0.95rem;
+    line-height: 1.25;
+  }
+
+  .caption-info p {
+    font-size: 0.74rem;
+    line-height: 1.35;
+  }
+
+  .caption-price-pill {
+    font-size: 0.78rem;
+    padding: 0.35rem 0.75rem;
+    align-self: flex-start;
+  }
+
+  /* 4. Wall Vibe Studio (#wall-vibe-studio) */
+  .vibe-studio-grid {
+    gap: 1.25rem;
+  }
+
+  .vibe-wall-stage {
+    min-height: 295px;
+    padding: 0.95rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .vibe-stage-badge-bar {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .stage-pill-badge {
+    font-size: 0.66rem;
+    padding: 0.25rem 0.6rem;
+    white-space: normal;
+    max-width: 100%;
+  }
+
+  .vibe-artwork-holder {
+    width: min(74%, 225px);
+    margin-bottom: 1.6rem;
+  }
+
+  .vibe-controls-panel {
+    padding: 1.15rem 1rem;
+    border-radius: var(--radius-lg);
+    gap: 1.1rem;
+  }
+
+  .wall-swatch-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .swatch-btn {
+    padding: 0.55rem 0.6rem;
+    font-size: 0.74rem;
+    min-height: 44px;
+  }
+
+  .lighting-mode-bar {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .lighting-mode-btn {
+    min-height: 40px;
+    font-size: 0.75rem;
+    padding: 0.45rem 0.75rem;
+    flex: 1 1 calc(50% - 0.4rem);
+    justify-content: center;
+  }
+
+  /* 5. Size & Price Calculator (#size-price-guide) */
+  .calculator-card {
+    padding: 1.15rem 0.95rem;
+    gap: 1.25rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .scale-room-visualizer {
+    height: 280px;
+    padding: 0.85rem 0.6rem 0;
+    border-radius: var(--radius-md);
+  }
+
+  .scaled-art-box {
+    max-width: 82% !important;
+  }
+
+  .scaled-dimension-badge {
+    font-size: 0.7rem;
+    padding: 0.22rem 0.6rem;
+  }
+
+  .calc-output-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .calc-stat-box {
+    padding: 0.85rem 1rem;
+  }
+
+  .calc-stat-value {
+    font-size: 1.3rem;
+  }
+
+  .placement-recommendation-box {
+    padding: 0.85rem 0.95rem;
+    align-items: flex-start;
+  }
+
+  /* 6. Product Catalog (#collections) */
+  .breadcrumb-list {
+    font-size: 0.72rem;
+    padding: 0.38rem 0.85rem;
+  }
+
+  .argon-nav-pills {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.45rem;
+    margin-bottom: 1.65rem;
+    scrollbar-width: none;
+  }
+
+  .argon-nav-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-pill-btn {
+    flex-shrink: 0;
+    padding: 0.58rem 1rem;
+    font-size: 0.8rem;
+    min-height: 42px;
+  }
+
+  .products-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  .product-body {
+    padding: 1.1rem;
+    gap: 0.75rem;
+  }
+
+  .product-title {
+    font-size: 1.12rem;
+  }
+
+  .product-config-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* 7. Custom Carve Studio (#custom-configurator) */
+  .configurator-grid {
+    gap: 1.25rem;
+  }
+
+  .config-preview-card {
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    position: static;
+  }
+
+  .custom-canvas-stage {
+    aspect-ratio: 4 / 3.4;
+    margin-bottom: 0.95rem;
+  }
+
+  .config-steps-card {
+    padding: 1.15rem 0.95rem;
+    border-radius: var(--radius-lg);
+    gap: 1.2rem;
+  }
+
+  .wood-finish-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .finish-option-btn {
+    padding: 0.55rem 0.6rem;
+    font-size: 0.75rem;
+    min-height: 44px;
+  }
+
+  /* 8. "The Craft" Before/After Split-Screen Slider */
+  .carve-compare-wrapper {
+    margin-bottom: 2rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .carve-compare-stage {
+    aspect-ratio: 4 / 3.2;
+    min-height: 225px;
+  }
+
+  .compare-badge {
+    font-size: 0.62rem;
+    padding: 0.24rem 0.55rem;
+    top: 0.55rem;
+    max-width: 44%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .compare-badge-left {
+    left: 0.55rem;
+  }
+
+  .compare-badge-right {
+    right: 0.55rem;
+  }
+
+  .compare-handle-circle {
+    width: 38px;
+    height: 38px;
+  }
+
+  .compare-caption-overlay {
+    padding: 0.65rem 0.8rem;
+  }
+
+  .compare-caption-overlay h4 {
+    font-size: 0.88rem;
+  }
+
+  .compare-caption-overlay p {
+    font-size: 0.72rem;
+  }
+
+  .craft-grid {
+    gap: 1.1rem;
+  }
+
+  .craft-card {
+    padding: 1.35rem;
+    border-radius: var(--radius-lg);
+  }
+
+  /* 9. Drawers, Modals, Floating WhatsApp & Toasts */
+  .cart-drawer,
+  .mobile-nav-drawer,
+  .admin-cms-drawer {
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  .drawer-header,
+  .drawer-body,
+  .drawer-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .wa-float {
+    width: 50px;
+    height: 50px;
+    bottom: 1rem;
+    right: 1rem;
+  }
+
+  body[dir="rtl"] .wa-float {
+    right: auto;
+    left: 1rem;
+  }
+
+  .toast-container {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 4.65rem;
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  .argon-toast {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .admin-floating-toolbar {
+    padding: 0.45rem 0.65rem;
+    gap: 0.4rem;
+    justify-content: space-between;
+  }
+
+  .admin-toolbar-actions {
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+
+  .admin-bar-btn {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.7rem;
+  }
+}
+
+/* Extra-Small Phone Safeguards (320px - 360px) */
+@media (max-width: 360px) {
+  .brand-tagline {
+    display: none;
+  }
+
+  .hero-trust-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .wall-swatch-grid,
+  .wood-finish-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 
 
 

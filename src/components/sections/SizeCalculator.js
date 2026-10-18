@@ -20,7 +20,8 @@ export function updateSizeCalculator() {
   const pixelWidth = Math.round((widthCm / 210) * 440);
   const scaledArtBox = document.getElementById('scaledArtBox');
   if (scaledArtBox) {
-    scaledArtBox.style.width = `${Math.max(95, Math.min(340, pixelWidth))}px`;
+    const clampedPx = Math.max(95, Math.min(340, pixelWidth));
+    scaledArtBox.style.width = `min(84%, ${clampedPx}px)`;
   }
 
   const visualizerWidthBadge = document.getElementById('visualizerWidthBadge');
