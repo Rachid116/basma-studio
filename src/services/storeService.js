@@ -1,16 +1,102 @@
 /**
- * BASMA (@basma.llb) — Unified Persistent Store State & Cloud Sync Service
- * Synchronizes Admin CMS edits across LocalStorage, Serverless Vercel API (/api/store-state),
- * static store-state.json fallback, and optional Cloud Webhook URLs.
+ * BASMA (@basma.llb) — Unified Persistent Store State & Supabase Cloud Sync Service
+ * 
+ * Synchronizes Admin CMS edits across:
+ *   1. Supabase Cloud Database (100% Free permanent storage in table `site_data`)
+ *   2. LocalStorage browser cache (Instant offline responsiveness)
+ *   3. Serverless Vercel API (/api/store-state)
+ *   4. Static /store-state.json fallback
  */
 
+import { createClient } from '@supabase/supabase-js';
 import { DEFAULT_PRODUCTS, DEFAULT_SETTINGS, DEFAULT_CATEGORIES } from '../data/products.js';
 import { DEFAULT_PIN_SHA256, sha256Hex, getStoredAdminPinHash, saveAdminPinHash } from '../utils/security.js';
 import { CURRENCIES } from '../utils/priceFormatter.js';
 import { escapeHtml } from '../utils/sanitize.js';
 
 const STORAGE_KEY = 'basma_cms_unified_state_v3';
+const SUPABASE_URL_KEY = 'basma_supabase_url';
+const SUPABASE_KEY_KEY = 'basma_supabase_anon_key';
 
+// ----------------------------------------------------------------------------
+// SUPABASE CLIENT INITIALIZATION
+// ----------------------------------------------------------------------------
+function resolveEnv(name) {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[name]) {
+      return import.meta.env[name];
+    }
+  } catch (_) {}
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env[name]) {
+      return process.env[name];
+    }
+  } catch (_) {}
+  return '';
+}
+
+function getActiveSupabaseConfig() {
+  const envUrl = resolveEnv('VITE_SUPABASE_URL') || resolveEnv('SUPABASE_URL');
+  const envKey = resolveEnv('VITE_SUPABASE_ANON_KEY') || resolveEnv('SUPABASE_ANON_KEY');
+  let localUrl = '';
+  let localKey = '';
+  try {
+    localUrl = localStorage.getItem(SUPABASE_URL_KEY) || '';
+    localKey = localStorage.getItem(SUPABASE_KEY_KEY) || '';
+  } catch (_) {}
+
+  return {
+    url: (envUrl || localUrl || '').trim(),
+    key: (envKey || localKey || '').trim(),
+    isEnv: !!(envUrl && envKey)
+  };
+}
+
+let supabaseInstance = null;
+
+export function getSupabaseClient() {
+  if (supabaseInstance) return supabaseInstance;
+  const config = getActiveSupabaseConfig();
+  if (config.url && config.key && config.url.startsWith('http')) {
+    try {
+      supabaseInstance = createClient(config.url, config.key, {
+        auth: { persistSession: false }
+      });
+      return supabaseInstance;
+    } catch (err) {
+      console.warn('[Basma DB] Supabase initialization failed:', err);
+    }
+  }
+  return null;
+}
+
+export function setSupabaseCredentials(url, key) {
+  const cleanUrl = String(url || '').trim();
+  const cleanKey = String(key || '').trim();
+  try {
+    if (cleanUrl) localStorage.setItem(SUPABASE_URL_KEY, cleanUrl);
+    else localStorage.removeItem(SUPABASE_URL_KEY);
+    if (cleanKey) localStorage.setItem(SUPABASE_KEY_KEY, cleanKey);
+    else localStorage.removeItem(SUPABASE_KEY_KEY);
+  } catch (_) {}
+  supabaseInstance = null;
+  return getSupabaseClient();
+}
+
+export function getSupabaseStatus() {
+  const config = getActiveSupabaseConfig();
+  const client = getSupabaseClient();
+  return {
+    isConfigured: !!(config.url && config.key),
+    hasClient: !!client,
+    url: config.url ? config.url.replace(/^https?:\/\//, '').split('/')[0] : '',
+    isEnv: config.isEnv
+  };
+}
+
+// ----------------------------------------------------------------------------
+// STORE STATE
+// ----------------------------------------------------------------------------
 export const storeState = {
   settings: { ...DEFAULT_SETTINGS },
   categories: JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)),
@@ -48,7 +134,6 @@ export function notifyStoreListeners() {
 }
 
 export function getStoreSnapshot() {
-  // Never serialize plaintext adminPin into snapshots; always use active SHA-256 hash
   const safeSettings = { ...storeState.settings };
   delete safeSettings.adminPin;
   safeSettings.adminPinHash = getStoredAdminPinHash();
@@ -104,7 +189,7 @@ export async function applyStoreSnapshot(snapshot) {
     });
   }
 
-  // 2. Dynamic Promo / Discount Banner
+  // 2. Dynamic Promo Banner
   const promo = storeState.settings.promoBanner;
   let banner = document.getElementById('siteAnnouncementBar');
   if (promo && promo.active && promo.text) {
@@ -166,35 +251,125 @@ export async function applyStoreSnapshot(snapshot) {
   notifyStoreListeners();
 }
 
+// ----------------------------------------------------------------------------
+// SUPABASE SYNC LOGIC
+// ----------------------------------------------------------------------------
+export async function fetchStoreFromSupabase() {
+  const client = getSupabaseClient();
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client
+      .from('site_data')
+      .select('content')
+      .eq('id', 'main_store')
+      .maybeSingle();
+
+    if (error) {
+      console.warn('[Basma DB] Supabase select error:', error.message);
+      return null;
+    }
+
+    if (data && data.content && Array.isArray(data.content.products) && data.content.products.length > 0) {
+      return data.content;
+    }
+
+    // Table is empty / first run: automatically populate with the default Basma catalog!
+    const initialSeed = getStoreSnapshot();
+    await client
+      .from('site_data')
+      .upsert({
+        id: 'main_store',
+        content: initialSeed,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+
+    return initialSeed;
+  } catch (err) {
+    console.warn('[Basma DB] Supabase fetch exception:', err);
+    return null;
+  }
+}
+
+export async function upsertStoreToSupabase(snapshot) {
+  const client = getSupabaseClient();
+  if (!client) return false;
+
+  try {
+    const { error } = await client
+      .from('site_data')
+      .upsert({
+        id: 'main_store',
+        content: snapshot,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+
+    if (error) {
+      console.warn('[Basma DB] Supabase upsert error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Basma DB] Supabase upsert exception:', err);
+    return false;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// PERSISTENT LOAD & SAVE ORCHESTRATION (ZERO-FAILURE FALLBACK)
+// ----------------------------------------------------------------------------
 export async function loadPersistentStoreState() {
-  let loadedFromLocal = false;
+  let loaded = false;
+
+  // 1. Try Supabase Cloud Database (Free permanent persistence across all devices & deployments)
   try {
-    const savedRaw = localStorage.getItem(STORAGE_KEY);
-    if (savedRaw) {
-      const parsed = JSON.parse(savedRaw);
-      await applyStoreSnapshot(parsed);
-      loadedFromLocal = true;
+    const supabaseData = await fetchStoreFromSupabase();
+    if (supabaseData && Array.isArray(supabaseData.products) && supabaseData.products.length > 0) {
+      await applyStoreSnapshot(supabaseData);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(supabaseData));
+      } catch (_) {}
+      loaded = true;
     }
   } catch (_) {}
 
-  // Try serverless API /api/store-state first, then fallback to /store-state.json
-  try {
-    const apiResp = await fetch('/api/store-state', { cache: 'no-store' });
-    if (apiResp.ok) {
-      const remoteData = await apiResp.json();
-      if (!loadedFromLocal && remoteData && remoteData.products) {
-        await applyStoreSnapshot(remoteData);
-        return;
+  // 2. Fallback to localStorage cache
+  if (!loaded) {
+    try {
+      const savedRaw = localStorage.getItem(STORAGE_KEY);
+      if (savedRaw) {
+        const parsed = JSON.parse(savedRaw);
+        if (parsed && Array.isArray(parsed.products) && parsed.products.length > 0) {
+          await applyStoreSnapshot(parsed);
+          loaded = true;
+        }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }
 
-  if (!loadedFromLocal) {
+  // 3. Fallback to serverless API /api/store-state
+  if (!loaded) {
+    try {
+      const apiResp = await fetch('/api/store-state', { cache: 'no-store' });
+      if (apiResp.ok) {
+        const remoteData = await apiResp.json();
+        if (remoteData && Array.isArray(remoteData.products) && remoteData.products.length > 0) {
+          await applyStoreSnapshot(remoteData);
+          loaded = true;
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 4. Fallback to static store-state.json
+  if (!loaded) {
     try {
       const resp = await fetch('/store-state.json', { cache: 'no-store' });
       if (resp.ok) {
         const fallbackData = await resp.json();
-        await applyStoreSnapshot(fallbackData);
+        if (fallbackData && Array.isArray(fallbackData.products)) {
+          await applyStoreSnapshot(fallbackData);
+        }
       }
     } catch (_) {}
   }
@@ -202,11 +377,19 @@ export async function loadPersistentStoreState() {
 
 export async function savePersistentStoreState() {
   const snapshot = getStoreSnapshot();
+
+  // 1. Instant local persistence
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
   } catch (_) {}
 
-  // Push to Vercel Serverless API (/api/store-state)
+  // 2. Upsert to Supabase Cloud Database
+  let supabaseSynced = false;
+  try {
+    supabaseSynced = await upsertStoreToSupabase(snapshot);
+  } catch (_) {}
+
+  // 3. Push to Vercel Serverless API (/api/store-state)
   try {
     fetch('/api/store-state', {
       method: 'POST',
@@ -215,7 +398,7 @@ export async function savePersistentStoreState() {
     }).catch(() => {});
   } catch (_) {}
 
-  // Push to optional Cloud Webhook URL if configured
+  // 4. Push to optional Cloud Webhook URL
   if (storeState.settings.cloudWebhookUrl && storeState.settings.cloudWebhookUrl.startsWith('http')) {
     try {
       fetch(storeState.settings.cloudWebhookUrl, {
@@ -226,11 +409,16 @@ export async function savePersistentStoreState() {
     } catch (_) {}
   }
 
+  // 5. Update UI sync badge
   const syncBadge = document.getElementById('adminSyncBadge');
   if (syncBadge) {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    syncBadge.textContent = `✓ Synced Live at ${timeStr}`;
+    syncBadge.textContent = supabaseSynced
+      ? `✓ Synced to Supabase Cloud at ${timeStr}`
+      : `✓ Synced Live at ${timeStr}`;
   }
+
+  return { ok: true, supabaseSynced };
 }
 
 export async function resetStoreToFactoryDefaults() {
@@ -241,5 +429,27 @@ export async function resetStoreToFactoryDefaults() {
   storeState.inlineEdits = {};
   storeState.products = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
   await applyStoreSnapshot(getStoreSnapshot());
+  await savePersistentStoreState();
+}
+
+// ----------------------------------------------------------------------------
+// OFFLINE JSON BACKUP UTILITIES
+// ----------------------------------------------------------------------------
+export function exportStoreBackupJson() {
+  const snapshot = getStoreSnapshot();
+  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(snapshot, null, 2));
+  const link = document.createElement('a');
+  link.setAttribute('href', dataStr);
+  link.setAttribute('download', `basma_store_backup_${new Date().toISOString().slice(0, 10)}.json`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+export async function importStoreBackupJson(parsed) {
+  if (!parsed || !Array.isArray(parsed.products)) {
+    throw new Error('Invalid backup file: missing products array.');
+  }
+  await applyStoreSnapshot(parsed);
   await savePersistentStoreState();
 }

@@ -37,14 +37,23 @@ async function getAuthRecord() {
   if (!rec || !rec.salt || !rec.secret) {
     let initialCustomHash = null;
     try {
-      const rootStateFile = path.join(process.cwd(), 'store-state.json');
-      if (fs.existsSync(rootStateFile)) {
-        const parsed = JSON.parse(fs.readFileSync(rootStateFile, 'utf8'));
-        if (parsed?.settings?.adminPinHash && isHash(parsed.settings.adminPinHash)) {
-          initialCustomHash = parsed.settings.adminPinHash;
-        }
+      const siteStore = await storage.getJSON('main_store');
+      if (siteStore?.settings?.adminPinHash && isHash(siteStore.settings.adminPinHash)) {
+        initialCustomHash = siteStore.settings.adminPinHash;
       }
     } catch (_) {}
+
+    if (!initialCustomHash) {
+      try {
+        const rootStateFile = path.join(process.cwd(), 'store-state.json');
+        if (fs.existsSync(rootStateFile)) {
+          const parsed = JSON.parse(fs.readFileSync(rootStateFile, 'utf8'));
+          if (parsed?.settings?.adminPinHash && isHash(parsed.settings.adminPinHash)) {
+            initialCustomHash = parsed.settings.adminPinHash;
+          }
+        }
+      } catch (_) {}
+    }
 
     const salt = randomHex(16);
     rec = {
@@ -108,6 +117,15 @@ async function setPin(rec, newClientHash) {
         pubObj.settings.adminPinHash = newClientHash;
         fs.writeFileSync(pubStateFile, JSON.stringify(pubObj, null, 2), 'utf8');
       }
+    }
+  } catch (_) {}
+
+  // Sync to database key main_store
+  try {
+    const mainStore = await storage.getJSON('main_store');
+    if (mainStore && mainStore.settings) {
+      mainStore.settings.adminPinHash = newClientHash;
+      await storage.setJSON('main_store', mainStore);
     }
   } catch (_) {}
 

@@ -121,7 +121,7 @@
   </header>
 
   <!-- Animated Mobile Hamburger Drawer Menu -->
-  <div class="mobile-nav-backdrop" id="mobileNavBackdrop" aria-hidden="true" onclick="window.closeMobileMenuDrawer?.()"></div>
+  <div class="mobile-nav-backdrop" id="mobileNavBackdrop" aria-hidden="true" onclick="typeof window.closeMobileMenuDrawer==='function'?window.closeMobileMenuDrawer():(document.getElementById('mobileNavDrawer')?.classList.remove('open'),document.getElementById('mobileNavBackdrop')?.classList.remove('open'),document.body.classList.remove('mobile-drawer-open'))"></div>
   <aside class="mobile-nav-drawer" id="mobileNavDrawer" aria-label="Mobile Navigation Drawer" aria-hidden="true">
     <div class="mobile-drawer-header">
       <div style="display:flex; align-items:center; gap:0.65rem;">
@@ -131,7 +131,7 @@
           <span style="font-size:0.72rem; color:var(--accent-gold-light);">@basma.llb Studio</span>
         </div>
       </div>
-      <button type="button" class="mobile-drawer-close" id="closeMobileMenuBtn" aria-label="Close Mobile Menu" onclick="window.closeMobileMenuDrawer?.()">
+      <button type="button" class="mobile-drawer-close" id="closeMobileMenuBtn" aria-label="Close Mobile Menu" onclick="typeof window.closeMobileMenuDrawer==='function'?window.closeMobileMenuDrawer():(document.getElementById('mobileNavDrawer')?.classList.remove('open'),document.getElementById('mobileNavBackdrop')?.classList.remove('open'),document.body.classList.remove('mobile-drawer-open'))">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>

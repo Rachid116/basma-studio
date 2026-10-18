@@ -12,6 +12,13 @@ import {
   createAdminSession
 } from './utils/security.js';
 import { escapeHtml, sanitizePlainText } from './utils/sanitize.js';
+import {
+  getSupabaseClient,
+  getSupabaseStatus,
+  setSupabaseCredentials,
+  fetchStoreFromSupabase,
+  upsertStoreToSupabase
+} from './services/storeService.js';
 
 let state = {
   version: '2026.3.0',
@@ -63,47 +70,39 @@ async function submitPin() {
   try {
     const pinHash = await sha256Hex(enteredPin);
     const activeHash = getStoredAdminPinHash();
-    let serverOk = false;
-    let serverResponded = false;
-    let data = {};
 
+    // 1. If admin has set a custom PIN, the default PIN '2026' is strictly invalidated!
+    if (activeHash !== DEFAULT_PIN_SHA256 && pinHash === DEFAULT_PIN_SHA256) {
+      enteredPin = '';
+      updatePinDots();
+      showAuthStatus('Default PIN 2026 has been deactivated. Please enter your new custom PIN.', 'error');
+      return;
+    }
+
+    // 2. Strict PIN match requirement. No fallback backdoors.
+    if (pinHash !== activeHash) {
+      enteredPin = '';
+      updatePinDots();
+      showAuthStatus('Incorrect PIN. Access denied.', 'error');
+      return;
+    }
+
+    // 3. Optional serverless session check/cookie set
     try {
-      const resp = await fetch('/api/admin-auth', {
+      await fetch('/api/admin-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'login', pin: enteredPin, pinHash, hours: 24 })
       });
-      serverResponded = true;
-      data = await resp.json().catch(() => ({}));
-      if (resp.ok && data.ok) {
-        serverOk = true;
-      }
-      if (resp.status === 429) {
-        isLocked = true;
-        startLockoutTimer(data.remainingSeconds || 900);
-        return;
-      }
-    } catch (_) {
-      serverResponded = false;
-    }
+    } catch (_) {}
 
-    // Direct check: strictly matches activeHash. NO hardcoded fallback backdoors.
-    const directValid = (pinHash === activeHash);
-    const isValid = serverResponded ? serverOk : directValid;
-
-    if (isValid) {
-      saveAdminPinHash(pinHash);
-      createAdminSession(pinHash);
-      enteredPin = '';
-      updatePinDots();
-      document.getElementById('authStatusMsg').style.display = 'none';
-      unlockDashboard();
-      showToast('Welcome to Basma Studio CMS Dashboard!');
-    } else {
-      enteredPin = '';
-      updatePinDots();
-      showAuthStatus(data.error || 'Incorrect PIN. Access denied.', 'error');
-    }
+    // 4. Create session and unlock dashboard (NEVER overwrite stored PIN hash on login!)
+    createAdminSession(pinHash);
+    enteredPin = '';
+    updatePinDots();
+    document.getElementById('authStatusMsg').style.display = 'none';
+    unlockDashboard();
+    showToast('Welcome to Basma Studio CMS Dashboard!');
   } catch (err) {
     enteredPin = '';
     updatePinDots();
@@ -176,30 +175,58 @@ function unlockDashboard() {
 // ----------------------------------------------------------------------------
 async function loadStoreData() {
   let loaded = false;
+
+  // 1. Primary Cloud Storage: Supabase (100% Free permanent PostgreSQL table `site_data`)
   try {
-    const resp = await fetch('/api/store-state', { cache: 'no-store' });
-    if (resp.ok) {
-      const remote = await resp.json();
-      if (remote && Array.isArray(remote.products)) {
-        state = {
-          ...state,
-          ...remote,
-          settings: { ...DEFAULT_SETTINGS, ...(remote.settings || {}) }
-        };
-        loaded = true;
-        updateStorageStatusBadge(remote.backend, remote.isPersistent);
-      }
+    const supabaseData = await fetchStoreFromSupabase();
+    if (supabaseData && Array.isArray(supabaseData.products) && supabaseData.products.length > 0) {
+      state = {
+        ...state,
+        ...supabaseData,
+        settings: { ...DEFAULT_SETTINGS, ...(supabaseData.settings || {}) }
+      };
+      loaded = true;
+      updateStorageStatusBadge('supabase', true);
     }
   } catch (_) {}
 
+  // 2. Fallback to serverless API /api/store-state
+  if (!loaded) {
+    try {
+      const resp = await fetch('/api/store-state', { cache: 'no-store' });
+      if (resp.ok) {
+        const remote = await resp.json();
+        if (remote && Array.isArray(remote.products) && remote.products.length > 0) {
+          state = {
+            ...state,
+            ...remote,
+            settings: { ...DEFAULT_SETTINGS, ...(remote.settings || {}) }
+          };
+          loaded = true;
+          updateStorageStatusBadge(remote.backend, remote.isPersistent);
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 3. Fallback to localStorage cache
   if (!loaded) {
     try {
       const saved = localStorage.getItem('basma_cms_unified_state_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
-        state = { ...state, ...parsed };
+        if (parsed && Array.isArray(parsed.products) && parsed.products.length > 0) {
+          state = { ...state, ...parsed };
+          loaded = true;
+          updateStorageStatusBadge('local-disk', true);
+        }
       }
     } catch (_) {}
+  }
+
+  // Sync admin PIN hash from loaded settings if present and valid
+  if (state.settings?.adminPinHash && /^[a-f0-9]{64}$/i.test(state.settings.adminPinHash)) {
+    saveAdminPinHash(state.settings.adminPinHash);
   }
 
   populateAllPanes();
@@ -210,11 +237,15 @@ function updateStorageStatusBadge(backend = 'local-disk', isPersistent = true) {
   const badge = document.getElementById('storageStatusBadge');
   if (!badgeText || !badge) return;
 
-  if (backend === 'vercel-kv') {
+  const supabaseStatus = getSupabaseStatus();
+  if (backend === 'supabase' || supabaseStatus.hasClient) {
+    badgeText.textContent = `● Supabase Cloud DB (${supabaseStatus.url || 'Connected'})`;
+    badge.className = 'admin-badge status-live';
+  } else if (backend === 'vercel-kv') {
     badgeText.textContent = '● Vercel KV (Cloud Synced)';
     badge.className = 'admin-badge status-live';
   } else if (isPersistent) {
-    badgeText.textContent = '● Disk Persistent (Live Auto-Sync)';
+    badgeText.textContent = '● Local Storage (Active)';
     badge.className = 'admin-badge status-live';
   } else {
     badgeText.textContent = '● Ephemeral /tmp';
@@ -226,27 +257,38 @@ async function saveLiveStoreState() {
   readAllPanesIntoState();
   state.updatedAt = new Date().toISOString();
 
-  // Save to local storage
+  // 1. Instant local persistence
   try {
     localStorage.setItem('basma_cms_unified_state_v3', JSON.stringify(state));
   } catch (_) {}
 
-  // Push to server API
+  // 2. Primary: Upsert to Supabase Cloud Database (table `site_data`)
+  let supabaseOk = false;
+  try {
+    supabaseOk = await upsertStoreToSupabase(state);
+  } catch (_) {}
+
+  // 3. Push to Serverless API (/api/store-state)
+  let serverOk = false;
   try {
     const resp = await fetch('/api/store-state', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(state)
     });
-    if (resp.ok) {
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      showToast(`✓ All changes saved and synced live at ${timeStr}!`);
-      updateStorageStatusBadge(state.backend, true);
-    } else {
-      showToast('Saved locally, but server returned an error.', 4000);
-    }
-  } catch (err) {
-    showToast('Saved locally in browser (Offline Mode).', 3500);
+    if (resp.ok) serverOk = true;
+  } catch (_) {}
+
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  if (supabaseOk) {
+    showToast(`✓ All changes saved and synced to Supabase Cloud at ${timeStr}!`);
+    updateStorageStatusBadge('supabase', true);
+  } else if (serverOk) {
+    showToast(`✓ Changes saved to serverless store at ${timeStr}!`);
+    updateStorageStatusBadge(state.backend, true);
+  } else {
+    showToast(`✓ Changes saved locally in browser cache at ${timeStr} (Offline Mode).`, 3500);
+    updateStorageStatusBadge('local-disk', true);
   }
 }
 
@@ -940,6 +982,28 @@ function populateSettingsTab() {
   document.getElementById('seoDesc').value = seo.description || '';
   document.getElementById('seoKeywords').value = seo.keywords || '';
   document.getElementById('seoOgImage').value = seo.ogImage || '';
+
+  // Supabase Cloud DB Config
+  const supabaseStatus = getSupabaseStatus();
+  const urlInput = document.getElementById('settingsSupabaseUrl');
+  const keyInput = document.getElementById('settingsSupabaseKey');
+  const statusSpan = document.getElementById('supabaseConnStatus');
+
+  if (urlInput) {
+    urlInput.value = localStorage.getItem('basma_supabase_url') || (supabaseStatus.isEnv ? '(Configured in Vercel Environment)' : '');
+  }
+  if (keyInput) {
+    keyInput.value = localStorage.getItem('basma_supabase_anon_key') || (supabaseStatus.isEnv ? '••••••••••••••••••••••••' : '');
+  }
+  if (statusSpan) {
+    if (supabaseStatus.hasClient) {
+      statusSpan.textContent = `✓ Connected to Supabase (${supabaseStatus.url || 'Active'})`;
+      statusSpan.style.color = '#4ade80';
+    } else {
+      statusSpan.textContent = '○ Not connected (Local Storage fallback active)';
+      statusSpan.style.color = 'var(--admin-text-sub)';
+    }
+  }
 }
 
 function readSettingsTab() {
@@ -955,6 +1019,68 @@ function readSettingsTab() {
     keywords: document.getElementById('seoKeywords').value.trim(),
     ogImage: document.getElementById('seoOgImage').value.trim()
   };
+}
+
+async function connectSupabase() {
+  const urlInput = document.getElementById('settingsSupabaseUrl');
+  const keyInput = document.getElementById('settingsSupabaseKey');
+  const statusSpan = document.getElementById('supabaseConnStatus');
+
+  const rawUrl = (urlInput?.value || '').trim();
+  const rawKey = (keyInput?.value || '').trim();
+
+  if (!rawUrl || !rawKey || rawUrl.includes('(Configured') || rawKey.includes('•••')) {
+    const status = getSupabaseStatus();
+    if (status.hasClient) {
+      showToast(`Already connected to Supabase (${status.url})!`);
+      return;
+    }
+    alert('Please enter your Supabase Project URL (https://xyz.supabase.co) and Anon Public Key.');
+    return;
+  }
+
+  if (statusSpan) {
+    statusSpan.textContent = 'Testing connection...';
+    statusSpan.style.color = 'var(--admin-gold)';
+  }
+
+  setSupabaseCredentials(rawUrl, rawKey);
+  const client = getSupabaseClient();
+  if (!client) {
+    alert('Failed to initialize Supabase client. Please verify the URL starts with https://');
+    if (statusSpan) {
+      statusSpan.textContent = '✕ Invalid Supabase URL';
+      statusSpan.style.color = '#ef4444';
+    }
+    return;
+  }
+
+  try {
+    const { error } = await client.from('site_data').select('id').limit(1);
+    if (error && error.code !== 'PGRST116') {
+      alert(`Supabase table error: ${error.message}\nMake sure table "site_data" is created.`);
+      if (statusSpan) {
+        statusSpan.textContent = `✕ Table 'site_data' error: ${error.message}`;
+        statusSpan.style.color = '#ef4444';
+      }
+      return;
+    }
+
+    // Upsert current store state
+    await upsertStoreToSupabase(state);
+    showToast('✓ Successfully connected to Supabase and synced store data!');
+    updateStorageStatusBadge('supabase', true);
+    if (statusSpan) {
+      statusSpan.textContent = `✓ Connected to Supabase (${rawUrl.replace(/^https?:\/\//, '').split('/')[0]})`;
+      statusSpan.style.color = '#4ade80';
+    }
+  } catch (err) {
+    alert('Error connecting to Supabase: ' + err.message);
+    if (statusSpan) {
+      statusSpan.textContent = '✕ Connection failed';
+      statusSpan.style.color = '#ef4444';
+    }
+  }
 }
 
 async function updateAdminPin() {
@@ -1002,7 +1128,7 @@ async function updateAdminPin() {
     saveAdminPinHash(newHash);
     state.settings.adminPinHash = newHash;
     clearAdminSession();
-    saveLiveStoreState();
+    await saveLiveStoreState();
 
     document.getElementById('currentPin').value = '';
     document.getElementById('newPin').value = '';
@@ -1029,23 +1155,23 @@ function exportStateJsonBackup() {
   const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(safeState, null, 2));
   const link = document.createElement('a');
   link.setAttribute('href', dataStr);
-  link.setAttribute('download', `basma_store_state_${new Date().toISOString().slice(0, 10)}.json`);
+  link.setAttribute('download', `basma_store_backup_${new Date().toISOString().slice(0, 10)}.json`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  showToast('Exported store-state.json backup.');
+  showToast('Exported Store Backup (JSON).');
 }
 
 function importStateJsonSnapshot(file) {
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     try {
       const parsed = JSON.parse(e.target.result);
       if (parsed && Array.isArray(parsed.products)) {
         state = { ...state, ...parsed };
         populateAllPanes();
-        saveLiveStoreState();
+        await saveLiveStoreState();
         showToast('✓ Backup snapshot imported and applied!');
       } else {
         alert('Invalid store-state JSON file: expected a products array.');
@@ -1188,6 +1314,7 @@ function initAdminApp() {
   document.getElementById('btnExportLeadsJson')?.addEventListener('click', exportLeadsToJson);
 
   // 9. Settings actions
+  document.getElementById('btnConnectSupabase')?.addEventListener('click', connectSupabase);
   document.getElementById('btnUpdatePin')?.addEventListener('click', updateAdminPin);
   document.getElementById('btnExportJson')?.addEventListener('click', exportStateJsonBackup);
   document.getElementById('inputImportJson')?.addEventListener('change', (e) => {
